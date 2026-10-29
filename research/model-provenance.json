@@ -1,0 +1,27 @@
+{
+  "sourcePage": "https://wenmingzs.zsnews.cn/Article/view/cateid/526/id/63556.html",
+  "archive": "https://wenmingzs.zsnews.cn/Attachment/Files/2025/10/14/01.zip",
+  "models": [
+    {
+      "file": "white-wave.glb",
+      "archiveEntry": "01--会徽吉祥物主题口号源文件/全运会吉祥物三维文件（0529更新）/15运会-吉祥物-带贴图三维文件/白海豚挥手/白海豚挥手.glb",
+      "bytes": 1190364,
+      "sha256": "db3323bc455ebdb0d6e088882eeced93126d3b234bebf338573b96ebf1be5148",
+      "crc32": "43520e7c"
+    },
+    {
+      "file": "white.glb",
+      "archiveEntry": "01--会徽吉祥物主题口号源文件/全运会吉祥物三维文件（0529更新）/15运会-吉祥物-带贴图三维文件/白海豚站立/白海豚站立.glb",
+      "bytes": 1061060,
+      "sha256": "ef9bd7373eade4fcfbbbedb9d0d6ee33b58038491d5ae5d50b89f9391343a69a",
+      "crc32": "4b8eeb3d"
+    },
+    {
+      "file": "pink.glb",
+      "archiveEntry": "01--会徽吉祥物主题口号源文件/全运会吉祥物三维文件（0529更新）/15运会-吉祥物-带贴图三维文件/粉海豚/粉海豚.glb",
+      "bytes": 784676,
+      "sha256": "c8cc491873eb1fcda08d099ae41501836161336556b02183fa5dc8491b868249",
+      "crc32": "a978d47f"
+    }
+  ]
+}

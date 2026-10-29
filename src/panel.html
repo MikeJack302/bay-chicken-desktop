@@ -1,0 +1,35 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; media-src 'self' blob:"><title>湾湾的小窝</title><link rel="stylesheet" href="style.css"></head><body class="panel-page">
+<main class="panel-shell">
+<header class="titlebar"><strong>湾湾</strong><span id="expression-text">自然</span><button class="icon-button" id="close" title="收起" aria-label="收起窗口">×</button></header>
+<div class="tabs"><button class="tab active" data-tab="play">互动</button><button class="tab" data-tab="chat">聊天</button><button class="tab" data-tab="settings">设置</button></div>
+<section id="play-view" class="view play-view">
+<div class="compact-status"><span class="alive-dot"></span><span id="presence-text">就在你身边</span><button id="panel-reset-view" title="视角回正" aria-label="视角回正"><i data-icon="reset"></i></button></div>
+<div class="action-grid">
+<button data-action="stand"><i data-icon="stand"></i>站立</button><button data-action="sit"><i data-icon="sit"></i>坐下</button><button data-action="wave"><i data-icon="wave"></i>招手</button>
+<button data-action="jump"><i data-icon="jump"></i>跳跃</button><button data-action="dance"><i data-icon="dance"></i>跳舞</button><button data-action="stretch"><i data-icon="stretch"></i>伸懒腰</button>
+<button data-action="spin"><i data-icon="spin"></i>转圈</button><button data-action="pet"><i data-icon="pet"></i>摸头</button><button data-action="sleep"><i data-icon="sleep"></i>休息</button>
+</div>
+<details id="more-behaviors"><summary>动作与玩具 <span>糖葫芦、小球、风车…</span></summary><div class="toy-grid"><button data-action="eat" title="拿起糖葫芦吃几口"><i data-icon="candy"></i>糖葫芦</button><button data-action="ball" title="抛接小球"><i data-icon="ball"></i>小球</button><button data-action="pinwheel" title="拿起小风车"><i data-icon="pinwheel"></i>风车</button></div><div class="more-grid">
+<button data-action="walk">踏步</button><button data-action="nod">点头</button><button data-action="shake">摇头</button><button data-action="bow">鞠躬</button><button data-action="balance">单脚站</button><button data-action="peek">探头</button><button data-action="yawn">打哈欠</button><button data-action="sigh">放松</button><button data-action="bounce">连跳</button>
+</div></details>
+<div class="expression-row"><button data-action="happy"><i data-icon="happy"></i>开心</button><button data-action="curious"><i data-icon="curious"></i>好奇</button><button data-action="wink"><i data-icon="wink"></i>眨眼</button><button data-action="look"><i data-icon="look"></i>张望</button></div>
+<div class="behavior-row"><label><input id="quick-auto" type="checkbox" checked>自主动作</label><label><input id="quick-eyes" type="checkbox" checked>眼神跟随</label></div>
+<div class="play-footer"><span>拖动旋转 · 滚轮缩放</span><button id="pause-motion"><i data-icon="pause"></i><span>暂停</span></button></div>
+</section>
+<section id="chat-view" class="view chat-view" hidden>
+<div class="connection"><span class="status-dot"></span><span id="connection-label">离线陪伴</span><button id="connect-link">连接 AI ↗</button></div>
+<div id="messages" class="messages" role="log" aria-live="polite"><div class="welcome"><span class="welcome-kicker">HELLO, MY HUMAN</span><h1>你忙你的，<br>我陪着你<span>。</span></h1><p>一只爱整活的大湾鸡，<br>和一点刚刚好的陪伴。</p><div class="welcome-line"></div><span class="welcome-tip">摸摸头 · 一起发呆 · 随时说说话</span></div></div>
+<div id="suggestions" class="suggestions"><button>今天有点累</button><button>你好，湾湾</button><button id="dance-chip">跳个舞吧 ♫</button></div>
+<div class="composer-wrap"><form id="chat-form" class="composer"><textarea id="message-input" rows="2" maxlength="8000" placeholder="和湾湾说点什么…" aria-label="聊天消息"></textarea><div class="composer-bottom"><span>Enter 发送 · Shift + Enter 换行</span><button id="send" type="submit" title="发送消息" aria-label="发送消息">↑</button><button id="stop" type="button" hidden>停止</button></div></form><div class="composer-note"><span id="privacy-note">离线回应是预设台词 · 不发送到网络</span><button id="clear-history">清空聊天</button></div></div>
+</section>
+<section id="settings-view" class="view settings-view" hidden>
+<div class="settings-heading"><span class="welcome-kicker"></span><h2>偏好设置</h2></div>
+<form id="settings-form">
+<div class="settings-card"><div class="section-caption">互动与动作</div><label class="range-label">动作速度 <input id="motionSpeed" type="range" min="0.6" max="1.6" step="0.1" value="1"></label><label class="range-label">动作幅度 <input id="motionIntensity" type="range" min="0.5" max="1.3" step="0.1" value="1"></label><p class="field-note">“互动”里可开关自主小动作和目光跟随。玩玩具、表情动作后保留坐姿；跳跃、跳舞等需要先站起来。</p></div>
+<div class="settings-card"><div class="section-caption">01 / 湾湾的模样</div><div class="skin-options"><label><input type="radio" name="skin" value="white" checked><span class="skin-swatch white"></span>白色湾湾</label><label><input type="radio" name="skin" value="pink"><span class="skin-swatch pink"></span>粉色湾湾</label></div><label class="range-label">桌宠大小 <input id="scale" type="range" min="0.7" max="1.35" step="0.05" value="1"></label><label class="toggle-row">始终放在其他窗口上方<input id="alwaysOnTop" type="checkbox" checked></label><label class="toggle-row">朗读回复（系统语音）<input id="voice" type="checkbox"></label></div>
+<div class="settings-card"><div class="section-caption">02 / 连接 AI</div><label>接口类型<select id="provider"><option value="openai">OpenAI · Responses API</option><option value="compatible">兼容接口 · Chat Completions</option></select></label><label>接口地址<input id="endpoint" type="url" value="https://api.openai.com/v1" spellcheck="false" required></label><label>模型名称<input id="model" value="gpt-6-astra" spellcheck="false" required></label><label>API Key <span id="key-status"></span><input id="apiKey" type="password" placeholder="输入密钥，保存在本机系统加密存储中" autocomplete="off" spellcheck="false"></label><label class="toggle-row muted">移除已保存的密钥<input id="clearKey" type="checkbox"></label><p class="field-note">支持 OpenAI、兼容服务和本机模型。换接口时需重新填写对应密钥。接入后会向所选服务发送当前消息和最近 24 条对话。</p></div>
+<button class="save-button" type="submit">保存设置 <span>↗</span></button><p id="settings-feedback" role="status"></p>
+</form>
+<div class="settings-footer"><span>F8 显示 / 隐藏 · Ctrl + Alt + B 互动面板<br>双击回正 · 拖动底部手柄搬家</span><button id="quit">退出桌宠</button></div>
+</section><div id="toast" role="status" hidden></div>
+</main><script src="panel.js"></script></body></html>

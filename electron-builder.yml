@@ -1,0 +1,50 @@
+appId: cn.baychicken.desktop
+productName: 湾湾大湾鸡
+executableName: BayChicken
+electronDist: node_modules/electron/dist
+directories:
+  output: release/exe
+  buildResources: assets
+asar: true
+npmRebuild: false
+files:
+  - electron/**
+  - dist/**
+  - assets/icon.png
+  - assets/models/SOURCE.md
+  - package.json
+  - '!node_modules/**'
+extraFiles:
+  - from: README.md
+    to: README.md
+  - from: NOTICE.md
+    to: NOTICE.md
+  - from: assets/models/SOURCE.md
+    to: MODEL-SOURCE.md
+  - from: node_modules/electron/dist/LICENSE
+    to: ELECTRON-LICENSE.txt
+win:
+  icon: assets/app-icon.ico
+  signExecutable: false
+  target:
+    - target: nsis
+      arch: x64
+    - target: portable
+      arch: x64
+nsis:
+  artifactName: BayChicken-Setup-${version}-x64.exe
+  oneClick: false
+  perMachine: false
+  allowElevation: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 湾湾大湾鸡
+  runAfterFinish: false
+  deleteAppDataOnUninstall: false
+  installerLanguages:
+    - zh_CN
+    - en_US
+portable:
+  artifactName: BayChicken-Portable-${version}-x64.exe
+  requestExecutionLevel: user

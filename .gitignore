@@ -1,0 +1,15 @@
+node_modules/
+dist/
+release/
+test-results/
+*.log
+.cache/
+output/
+docs/share/raw/
+research/*
+!research/model-notes.md
+!research/model-provenance.json
+.env
+.env.*
+*.pem
+*.key

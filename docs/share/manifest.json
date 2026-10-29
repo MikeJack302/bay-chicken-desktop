@@ -1,0 +1,32 @@
+{
+  "size": "1080 × 1440",
+  "format": "PNG",
+  "source": "Actual app screenshots; HTML/CSS typography and layout. No AI-redrawn character or simulated feature UI.",
+  "repository": "https://github.com/MikeJack302/bay-chicken-desktop",
+  "images": [
+    {
+      "file": "01-cover.png",
+      "title": "把大湾鸡养在桌面上"
+    },
+    {
+      "file": "02-3d-views.png",
+      "title": "拖动转一转，看看另一面"
+    },
+    {
+      "file": "03-find-a-stool.png",
+      "title": "找个小凳子，认真坐好"
+    },
+    {
+      "file": "04-little-toys.png",
+      "title": "糖葫芦、小球和风车"
+    },
+    {
+      "file": "05-touch-reactions.png",
+      "title": "点击不同部位的随机反应"
+    },
+    {
+      "file": "06-download.png",
+      "title": "EXE 下载和使用说明"
+    }
+  ]
+}

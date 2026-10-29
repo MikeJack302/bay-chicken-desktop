@@ -1,0 +1,8 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src blob:"><title>湾湾 · 大湾鸡</title><link rel="stylesheet" href="style.css"></head><body class="pet-page">
+<canvas id="pet-canvas" aria-label="三维大湾鸡，点击脑袋、头顶、眼睛、肚子、小手、脚丫、尾巴和后背，有不同的随机反应；拖动三维旋转，滚轮缩放，双击回正" tabindex="0"></canvas>
+<div class="pet-bubble" id="bubble">嗨，我是湾湾！今天也陪着你。</div>
+<div id="sleepy" class="sleepy" hidden aria-hidden="true">z<span>z</span></div>
+<div id="pet-dock" class="pet-dock" data-interactive><nav class="pet-tools" aria-label="桌宠工具栏"><button id="move-pet" title="拖动搬家（或按住 Shift 拖动玩偶）" aria-label="拖动搬家"><i data-icon="move"></i></button><button data-action="pet" title="摸摸头" aria-label="摸摸头"><i data-icon="pet"></i></button><button id="reset-view" title="视角回正（双击玩偶）" aria-label="视角回正"><i data-icon="reset"></i></button><button id="more-actions" title="动作与设置" aria-label="动作与设置"><i data-icon="more"></i></button></nav>
+<div class="pet-label"><span class="alive-dot"></span>湾湾 <span id="pet-state">站着陪你</span></div>
+</div>
+<script src="pet.js"></script></body></html>

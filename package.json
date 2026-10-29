@@ -1,0 +1,29 @@
+{
+  "name": "bay-chicken",
+  "version": "0.4.0",
+  "private": true,
+  "description": "大湾鸡 · 3D Windows 桌面伙伴",
+  "main": "electron/main.cjs",
+  "author": { "name": "MikeJack302" },
+  "license": "UNLICENSED",
+  "homepage": "https://github.com/MikeJack302/bay-chicken-desktop",
+  "repository": { "type": "git", "url": "https://github.com/MikeJack302/bay-chicken-desktop.git" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/build.mjs && electron .",
+    "test": "node --test tests/*.test.cjs",
+    "pack": "node scripts/build.mjs && node scripts/pack.mjs",
+    "exe": "node scripts/build.mjs && electron-builder --config electron-builder.yml --win nsis portable --x64 --publish never",
+    "share:capture": "node scripts/capture-share.cjs",
+    "share:render": "node scripts/render-share.cjs"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "electron": "45.1.0",
+    "electron-builder": "26.18.0",
+    "esbuild": "^0.27.0",
+    "playwright": "1.62.1"
+  }
+}
