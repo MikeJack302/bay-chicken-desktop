@@ -1,7 +1,7 @@
 const DEFAULTS = Object.freeze({
   provider: 'openai', endpoint: 'https://api.openai.com/v1', model: 'gpt-6-astra',
   voice: false, alwaysOnTop: true, skin: 'white', scale: 1, nickname: '湾湾',
-  autoMotion: true, eyeTracking: true, motionSpeed: 1, motionIntensity: 1,
+  edgeSnap:true, autoMotion: true, eyeTracking: true, motionSpeed: 1, motionIntensity: 1,
 });
 const PERSONA = '你是用户的三维桌宠湾湾，一只以大湾鸡为灵感的可爱白色小伙伴。主要用简体中文，温暖、机灵，偶尔自然说一句粤语。闲聊回复尽量简短，遇到认真问题就认真回答。不要自称官方吉祥物。不要假装看得到屏幕、操作电脑、拥有本应用没有的能力，或声称记得未提供的对话。';
 
@@ -18,7 +18,7 @@ function validateSettings(value) {
   return { provider: s.provider, endpoint: url.href.replace(/\/+$/, ''), model: s.model.trim(),
     voice: !!s.voice, alwaysOnTop: !!s.alwaysOnTop, skin: s.skin === 'pink' ? 'pink' : 'white',
     scale: Math.max(0.7, Math.min(1.35, Number(s.scale) || 1)), nickname: String(s.nickname || '湾湾').slice(0, 16),
-    autoMotion: s.autoMotion !== false, eyeTracking: s.eyeTracking !== false,
+    edgeSnap:s.edgeSnap!==false, autoMotion: s.autoMotion !== false, eyeTracking: s.eyeTracking !== false,
     motionSpeed: Math.max(.6, Math.min(1.6, Number(s.motionSpeed)||1)), motionIntensity: Math.max(.5, Math.min(1.3, Number(s.motionIntensity)||1)) };
 }
 function extractText(data, provider) {

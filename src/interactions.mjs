@@ -1,6 +1,6 @@
 export const REACTIONS=Object.freeze({
   head:['pet','nod','happy','peek'],crown:['curious','shake','wink','look'],eyes:['wink','look','curious','happy'],
-  belly:['tickle','happy','bounce','sigh'],hands:['wave','ball','pinwheel','eat','bow'],feet:['jump','walk','balance','bounce'],
+  belly:['tickle','happy','bounce','sigh'],hands:['wave','ball','pinwheel','eat','tennis','serve','bow'],feet:['jump','walk','balance','bounce'],
   tail:['shake','spin','peek','wave'],back:['stretch','look','shake','sit'],
 });
 export const PART_LABELS={head:'脑袋',crown:'头顶水花',eyes:'眼睛',belly:'肚皮',hands:'小手',feet:'脚丫',tail:'尾巴',back:'后背'};

@@ -19,8 +19,10 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     for(const[action,prop]of[['eat','tanghulu'],['ball','little-ball'],['pinwheel','little-pinwheel']]){
       await pet.evaluate(a=>bay.action(a),action);await pet.waitForTimeout(1200);assert.ok((await pet.evaluate(()=>petDiagnostics.props.visible)).includes(prop));
     }
+    await pet.evaluate(()=>bay.action('tennis'));await pet.waitForTimeout(1500);assert.ok((await pet.evaluate(()=>petDiagnostics.props.visible)).includes('tennis-racket'));
+    await pet.evaluate(()=>bay.dockEdge('bottom'));await pet.waitForTimeout(2200);assert.equal(await pet.evaluate(()=>inputDiagnostics.edge),'bottom');assert.ok(await pet.evaluate(()=>Math.abs(edgeAnchor.y-inputDiagnostics.visible.bottom)<5));
     await pet.screenshot({path:'test-results/portable-exe.png',omitBackground:true});assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:true,artifact:path.basename(file),checks:['self extraction','packaged asar/preload/model startup','isolated profile','stool and all three props','renderer without errors']},null,2));
+    console.log(JSON.stringify({passed:true,artifact:path.basename(file),checks:['self extraction','packaged asar/preload/model startup','isolated profile','stool and props','tennis racket','bottom edge grip','renderer without errors']},null,2));
   }finally{
     if(pet)await pet.evaluate(()=>bay.quit()).catch(()=>{});if(browser)await browser.close().catch(()=>{});
     for(let i=0;i<20&&child.exitCode===null;i++)await delay(200);

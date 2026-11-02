@@ -3,6 +3,8 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const { DEFAULTS, validateSettings, streamChat, offlineReply } = require('./core.cjs');
 const {clampToArea,dragPosition}=require('./desktop.cjs');
+const {SIDES,nearestEdge,dockPosition,visibleRect}=require('./edges.cjs');
+let edgeSide=null,edgeArea=null,edgeTimer=null,edgeTarget=null;
 const windowSizes=new WeakMap();
 function positionWindow(win,p){win.setBounds({...p,...windowSizes.get(win)});}
 let panelSize={width:280,height:390};
@@ -15,7 +17,7 @@ const smoke = process.argv.includes('--smoke');
 if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'bay-chicken-smoke-' + process.pid));
 const stateFile = () => path.join(app.getPath('userData'), 'companion.json');
 const send = (channel, value) => [pet, panel].forEach(w => { if (w && !w.isDestroyed()) w.webContents.send(channel, value); });
-const publicState = () => ({ version:app.getVersion(),shortcuts:{...shortcutStatus},settings: state.settings, history: state.history, hasKey: !!key, busy: !!controller, petStatus,
+const publicState = () => ({ version:app.getVersion(),shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings, history: state.history, hasKey: !!key, busy: !!controller, petStatus,
   connected: !!key || (state.settings.provider === 'compatible' && ['localhost', '127.0.0.1', '[::1]'].includes(new URL(state.settings.endpoint).hostname)) });
 function persist() {
   const snapshot = JSON.stringify(state);
@@ -43,12 +45,27 @@ function placePanel() {
 function sizePanel(tab='play') { const height=tab==='play'?390:tab==='chat'?500:520;const width=tab==='play'?280:340;const area=screen.getDisplayMatching(pet.getBounds()).workArea;panel.setResizable(true);panelSize={width,height:Math.min(height,area.height-24)};windowSizes.set(panel,panelSize);panel.setSize(panelSize.width,panelSize.height);panel.setResizable(false);placePanel(); }
 function openPanel(tab = 'play') { sizePanel(tab); panel.show(); panel.focus(); panel.webContents.send('panel:tab', tab); }
 function openHelp(){openPanel('play');panel.webContents.send('help:open');}
-function home(){endDrag();const a=screen.getPrimaryDisplay().workArea;const[w,h]=pet.getSize();const p=clampToArea({x:a.x+a.width-w-40,y:a.y+a.height-h-40},w,h,a);positionWindow(pet,p);pet.show();state.position=p;placePanel();void persist().catch(console.error);}
-function toggle() { if (pet.isVisible()) { endDrag();pet.webContents.send('drag:ended');pet.hide(); panel.hide(); } else { pet.show(); } }
+function home(){endDrag({dock:false});setEdge(null);const a=screen.getPrimaryDisplay().workArea;const[w,h]=pet.getSize();const p=clampToArea({x:a.x+a.width-w-40,y:a.y+a.height-h-40},w,h,a);positionWindow(pet,p);pet.show();state.position=p;placePanel();void persist().catch(console.error);}
+function toggle() { if (pet.isVisible()) { endDrag({dock:false});pet.webContents.send('drag:ended');pet.hide(); panel.hide(); } else { pet.show(); } }
+function edgeMessage(){if(pet&&!pet.isDestroyed())send('edge:changed',{side:edgeSide,visible:edgeSide&&edgeArea?visibleRect(pet.getBounds(),edgeArea):null});}
+function setEdge(side){
+  if(side!==null&&!SIDES.includes(side))return;
+  clearInterval(edgeTimer);edgeTimer=null;edgeTarget=null;edgeSide=side;state.edgeSide=side;
+  if(side)edgeArea=screen.getDisplayMatching(pet.getBounds()).workArea;
+  else{edgeArea=null;const[x,y]=pet.getPosition(),[w,h]=pet.getSize();const pos=clampPosition({x,y},w,h);positionWindow(pet,pos);state.position=pos;}
+  edgeMessage();send('state',publicState());void persist().catch(console.error);
+}
 function endDrag(options={}) {
-  clearInterval(dragTimer); dragTimer = null;
-  const origin=dragOrigin;dragOrigin=null;if(!origin)return;
-  if (pet && !pet.isDestroyed()) { if(options?.cancel)positionWindow(pet,{x:origin.x,y:origin.y});const [x, y] = pet.getPosition();state.position={x,y};pet.webContents.send('drag:ended');void persist().catch(console.error); }
+  clearInterval(dragTimer);dragTimer=null;const origin=dragOrigin;dragOrigin=null;if(!origin)return;
+  if(pet&&!pet.isDestroyed()){
+    if(options?.cancel){positionWindow(pet,origin.restore||origin);if(origin.edgeBefore)setEdge(origin.edgeBefore);}
+    else if(options?.dock!==false&&!app.isQuitting&&state.settings.edgeSnap){
+      const b=pet.getBounds(),area=screen.getDisplayMatching(b).workArea,side=nearestEdge(b,area);
+
+      if(side&&!(origin.edgeBefore===side))setEdge(side);
+    }
+    const[x,y]=pet.getPosition();state.position={x,y};pet.webContents.send('drag:ended');void persist().catch(console.error);
+  }
 }
 function securedWindow(options, page) {
   const win = new BrowserWindow({ ...options, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false } });
@@ -65,7 +82,7 @@ async function boot() {
     const saved = JSON.parse(await fs.readFile(stateFile(), 'utf8'));
     state.settings = validateSettings(saved.settings);
     state.history = Array.isArray(saved.history) ? saved.history.filter(m => ['user', 'assistant'].includes(m.role) && typeof m.content === 'string').slice(-80) : [];
-    state.position = saved.position;
+    state.position = saved.position;state.edgeSide=SIDES.includes(saved.edgeSide)?saved.edgeSide:null;
     state.encryptedKey = saved.encryptedKey || '';
     if (state.encryptedKey && await safeStorage.isAsyncEncryptionAvailable()) {
       key = (await safeStorage.decryptStringAsync(Buffer.from(state.encryptedKey, 'base64'))).result;
@@ -77,7 +94,7 @@ async function boot() {
   pet = securedWindow({ ...size, ...p, title: '湾湾 · 大湾鸡', frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false, resizable: false, skipTaskbar: true, alwaysOnTop: state.settings.alwaysOnTop, show: false }, 'pet.html');
   panel = securedWindow({ width: 280, height: Math.min(390, area.height - 24), title: '湾湾', frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false, resizable: false, alwaysOnTop: state.settings.alwaysOnTop, show: false }, 'panel.html');
   windowSizes.set(pet,size);windowSizes.set(panel,panelSize);
-  pet.once('ready-to-show', () => {positionWindow(pet,p);pet.show();});
+  pet.once('ready-to-show', () => {positionWindow(pet,p);pet.show();if(state.edgeSide)setEdge(state.edgeSide);});
   panel.on('close', e => { if (!app.isQuitting) { e.preventDefault(); panel.hide(); } });
   pet.on('closed', () => app.quit());
   pet.on('blur', () => endDrag());
@@ -89,7 +106,7 @@ async function boot() {
     const cursor = screen.getCursorScreenPoint(), bounds = pet.getBounds();
     pet.webContents.send('cursor', { x: cursor.x - bounds.x, y: cursor.y - bounds.y });
   }, 90);
-  const keepVisible=()=>{endDrag();const[w,h]=pet.getSize();const[x,y]=pet.getPosition();const pos=clampPosition({x,y},w,h);positionWindow(pet,pos);state.position=pos;placePanel();void persist().catch(console.error);};
+  const keepVisible=()=>{endDrag({dock:false});const[w,h]=pet.getSize();const[x,y]=pet.getPosition();const pos=clampPosition({x,y},w,h);positionWindow(pet,pos);state.position=pos;if(edgeSide)setEdge(edgeSide);placePanel();void persist().catch(console.error);};
   screen.on('display-metrics-changed',keepVisible);screen.on('display-removed',keepVisible);
   const image = nativeImage.createFromPath(path.join(__dirname, '../assets/icon.png'));
   tray = new Tray(image);
@@ -99,6 +116,8 @@ async function boot() {
     { label: '找湾湾聊天', click: () => { pet.show(); openPanel('chat'); } },
     { label: '显示 / 隐藏桌宠（F8）', click: toggle },
     { label: '回到屏幕右下角', click: home },
+    { label: '贴边休息', click:()=>setEdge(nearestEdge(pet.getBounds(),screen.getDisplayMatching(pet.getBounds()).workArea,Infinity)) },
+    { label:'离开边缘',click:()=>setEdge(null) },
     { label: '操作指南', click: openHelp },
     { type: 'separator' }, { label: '设置', click: () => openPanel('settings') },
     { label: '退出湾湾', click: () => { app.isQuitting = true; app.quit(); } },
@@ -129,7 +148,7 @@ handle('settings:save', async value => {
     try { await persist(); } catch (error) { state = before; throw error; }
     key = nextKey;
     pet.setAlwaysOnTop(settings.alwaysOnTop); panel.setAlwaysOnTop(settings.alwaysOnTop);
-    send('state', publicState()); return { ok: true };
+    if(before.settings.edgeSnap&&!settings.edgeSnap&&edgeSide)setEdge(null);send('state', publicState()); return { ok: true };
   } catch (error) { return { ok: false, error: error.message }; }
 });
 handle('history:clear', async () => { if (controller) return { ok: false, error: '请先停止当前回复。' }; state.history = []; await persist(); send('state', publicState()); return { ok: true }; });
@@ -166,23 +185,35 @@ on('panel:toggle', () => { if(panel.isVisible())panel.hide();else openPanel('pla
 on('panel:resize', tab => { if(['play','settings','chat'].includes(tab))sizePanel(tab); });
 on('panel:close', () => panel.hide());
 on('app:quit', () => { app.isQuitting = true; app.quit(); });
+on('edge:dock',side=>{if(side==='auto')side=nearestEdge(pet.getBounds(),screen.getDisplayMatching(pet.getBounds()).workArea,Infinity);if(SIDES.includes(side))setEdge(side);});
+on('edge:leave',()=>setEdge(null));
+on('pet:geometry',g=>{
+  if(app.isQuitting||!edgeSide||dragTimer||g?.side!==edgeSide||!g.ready||!Number.isFinite(g.anchor?.x)||!Number.isFinite(g.anchor?.y))return;
+  const b=pet.getBounds();if(g.anchor.x<0||g.anchor.x>b.width||g.anchor.y<0||g.anchor.y>b.height)return;
+  edgeTarget=dockPosition(b,edgeArea,edgeSide,g.anchor);
+  if(edgeTimer)return;
+  edgeTimer=setInterval(()=>{if(!edgeSide||!edgeTarget||pet.isDestroyed()){clearInterval(edgeTimer);edgeTimer=null;return;}const[x,y]=pet.getPosition(),dx=edgeTarget.x-x,dy=edgeTarget.y-y;
+    const p=Math.max(Math.abs(dx),Math.abs(dy))<=2?edgeTarget:{x:Math.round(x+dx*.38),y:Math.round(y+dy*.38)};positionWindow(pet,p);state.position=p;edgeMessage();if(panel.isVisible())placePanel();
+    if(p===edgeTarget){clearInterval(edgeTimer);edgeTimer=null;}
+  },16);
+});
 on('help:open',openHelp);
 on('pet:reload',()=>{endDrag();void pet.loadFile(path.join(__dirname,'../dist/pet.html')).catch(console.error);});
 on('releases:open',()=>{void shell.openExternal('https://github.com/MikeJack302/bay-chicken-desktop/releases/latest').catch(console.error);});
 on('pet:home',home);
-on('pet:move',point=>{if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return;endDrag();const[x,y]=pet.getPosition(),[w,h]=pet.getSize();const p=clampPosition({x:x+Math.max(-40,Math.min(40,point.x)),y:y+Math.max(-40,Math.min(40,point.y))},w,h);positionWindow(pet,p);state.position=p;placePanel();void persist().catch(console.error);});
-on('pet:action', name => { if (['stand','sit','pet','tickle','dance','wave','sleep','idle','jump','stretch','spin','happy','curious','wink','look','pause','walk','nod','shake','bow','balance','peek','yawn','sigh','bounce','eat','ball','pinwheel','reset-view'].includes(name)) send('action', name); });
+on('pet:move',point=>{if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return;endDrag({dock:false});if(edgeSide)setEdge(null);const[x,y]=pet.getPosition(),[w,h]=pet.getSize();const p=clampPosition({x:x+Math.max(-40,Math.min(40,point.x)),y:y+Math.max(-40,Math.min(40,point.y))},w,h);positionWindow(pet,p);state.position=p;placePanel();void persist().catch(console.error);});
+on('pet:action', name => {if(edgeSide&&['stand','sit','tennis','serve','victory','jump','bounce','dance','spin','stretch','walk','balance','bow'].includes(name))setEdge(null); if (['stand','sit','pet','tickle','dance','wave','sleep','idle','jump','stretch','spin','happy','curious','wink','look','pause','walk','nod','shake','bow','balance','peek','yawn','sigh','bounce','eat','ball','pinwheel','tennis','serve','victory','reset-view'].includes(name)) send('action', name); });
 ipcMain.on('pet:status', (event, value) => {
   if (!pet || event.sender !== pet.webContents || !value || typeof value.mode !== 'string') return;
-  petStatus = { mode: value.mode.slice(0,24), posture: value.posture === 'sit' ? 'sit' : 'stand', expression: String(value.expression || '').slice(0,24), paused: !!value.paused };
+  petStatus = { edge:edgeSide,mode: value.mode.slice(0,24), posture: value.posture === 'sit' ? 'sit' : 'stand', expression: String(value.expression || '').slice(0,24), paused: !!value.paused };
   panel?.webContents.send('pet:status', petStatus);
 });
 on('pet:ignore', ignore => { if (!dragTimer) pet.setIgnoreMouseEvents(!!ignore, { forward: true }); });
 on('pet:drag-start', point => {
-  endDrag(); pet.setIgnoreMouseEvents(false);
+  endDrag({dock:false});const edgeBefore=edgeSide,restore=pet.getBounds();if(edgeSide)setEdge(null);pet.setIgnoreMouseEvents(false);
   const cursor = screen.getCursorScreenPoint(); const [x,y] = pet.getPosition();
   const start=point&&Number.isFinite(point.x)&&Number.isFinite(point.y)&&Math.hypot(point.x-cursor.x,point.y-cursor.y)<1000?point:cursor;
-  dragOrigin = { cursor:start,x,y,time:Date.now() };
+  dragOrigin = { cursor:start,x:edgeBefore?x-(cursor.x-start.x):x,y:edgeBefore?y-(cursor.y-start.y):y,restore:{x:restore.x,y:restore.y},edgeBefore,time:Date.now() };
   const move=()=>{
     if(!dragOrigin||pet.isDestroyed())return endDrag();
     if (Date.now() - dragOrigin.time > 60000) return endDrag();
@@ -195,7 +226,7 @@ on('pet:drag-start', point => {
 on('pet:drag-end', endDrag);
 let quitReady=false;
 app.on('before-quit', event => {
-  app.isQuitting=true;controller?.abort();clearInterval(cursorTimer);
+  app.isQuitting=true;controller?.abort();clearInterval(cursorTimer);clearInterval(edgeTimer);
   if(quitReady)return;event.preventDefault();endDrag();
   if(pet&&!pet.isDestroyed()){const[x,y]=pet.getPosition();state.position={x,y};}
   let timer;Promise.race([persist(),new Promise(resolve=>{timer=setTimeout(resolve,3000);})]).catch(console.error).finally(()=>{clearTimeout(timer);quitReady=true;app.quit();});

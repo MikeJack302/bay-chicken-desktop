@@ -29,7 +29,7 @@ function renderHistory() {
 function fillSettings() {
   const s = state.settings;
   for (const id of ['provider', 'endpoint', 'model', 'scale', 'motionSpeed', 'motionIntensity']) $('#' + id).value = s[id];
-  for (const id of ['voice', 'alwaysOnTop']) $('#' + id).checked = s[id];
+  for (const id of ['voice', 'alwaysOnTop','edgeSnap']) $('#' + id).checked = s[id];
   $(`input[name=skin][value=${s.skin}]`).checked = true;
   $('#key-status').textContent = state.hasKey ? '已保存 · 留空保留' : '未设置';
 }
@@ -89,7 +89,7 @@ $('#settings-form').onsubmit = async e => {
   try {
     const result = await api.saveSettings({ ...state.settings, provider: $('#provider').value, endpoint: $('#endpoint').value, model: $('#model').value,
       apiKey: $('#apiKey').value, clearKey: $('#clearKey').checked, scale: Number($('#scale').value),
-      skin: $('input[name=skin]:checked').value, voice: $('#voice').checked, alwaysOnTop: $('#alwaysOnTop').checked,
+      skin: $('input[name=skin]:checked').value, edgeSnap:$('#edgeSnap').checked,voice: $('#voice').checked, alwaysOnTop: $('#alwaysOnTop').checked,
       motionSpeed: Number($('#motionSpeed').value), motionIntensity: Number($('#motionIntensity').value) });
     $('#settings-feedback').textContent = result.ok ? '已保存，湾湾准备好啦。' : result.error;
     if (result.ok) { dirty = false; $('#apiKey').value = ''; $('#clearKey').checked = false; update(await api.getState()); }
@@ -100,12 +100,14 @@ const help=$('#controls-help');
 function showHelp(){if(!help.open)help.showModal();}
 $('#show-help').onclick=showHelp;
 $('#home-pet').onclick=()=>api.home();
+$('#edge-rest').onclick=()=>api.dockEdge('auto');
+$('#edge-leave').onclick=()=>api.leaveEdge();
 $('#release-link').onclick=()=>api.openReleases();
 api.on('help:open',showHelp);
 function renderPet(p) {
   if (!p) return;
-  const labels={wave:'招手',dance:'跳舞',jump:'开心蹦蹦',stretch:'伸懒腰',spin:'转圈',pet:'享受摸头',tickle:'被挠痒痒',sleep:'打瞌睡',curious:'歪头想事情',wink:'给你眨眼',look:'左顾右盼',happy:'开心眯眼',sitDown:'找凳子坐',standUp:'从凳子起身',eat:'吃糖葫芦',ball:'玩小球',pinwheel:'吹风车'};
-  $('#presence-text').textContent = p.paused ? '湾湾在这里，静静陪你' : `湾湾正在${labels[p.mode] || (p.posture === 'sit' ? '坐着陪你' : '站着陪你')}`;
+  const labels={wave:'招手',dance:'跳舞',jump:'开心蹦蹦',stretch:'伸懒腰',spin:'转圈',pet:'享受摸头',tickle:'被挠痒痒',sleep:'打瞌睡',curious:'歪头想事情',wink:'给你眨眼',look:'左顾右盼',happy:'开心眯眼',sitDown:'找凳子坐',standUp:'从凳子起身',eat:'吃糖葫芦',ball:'玩小球',pinwheel:'吹风车',tennis:'网球对打',serve:'抛球发球',victory:'好球庆祝'};
+  $('#presence-text').textContent = p.paused ? '湾湾在这里，静静陪你' : `湾湾正在${labels[p.mode] || (p.edge?'趴边陪你':p.posture === 'sit' ? '坐着陪你' : '站着陪你')}`;
   $('#expression-text').textContent = p.expression;
   document.querySelectorAll('#play-view [data-action]').forEach(b => { const active=b.dataset.action === (p.mode === 'idle' ? p.posture : p.mode); b.classList.toggle('selected',active); b.setAttribute('aria-pressed',String(active)); });
   $('#pause-motion span').textContent = p.paused ? '继续' : '暂停';

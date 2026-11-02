@@ -7,3 +7,7 @@
 /* Keep the default compact view entirely visible without scrolling. */
 .play-view{padding-bottom:8px}.compact-status{padding-top:8px;padding-bottom:7px}.action-grid button{padding-top:7px;padding-bottom:7px}summary{padding-top:8px;padding-bottom:8px}.behavior-row{padding-top:9px;padding-bottom:9px}.play-footer{padding-top:3px;padding-bottom:0}
 .pet-dock{position:absolute;left:50%;top:calc(100% - 55px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;width:max-content;max-width:calc(100% - 10px);z-index:3}.pet-dock .pet-tools{position:static;left:auto;bottom:auto;transform:none}.pet-dock .pet-label{position:static;left:auto;right:auto;bottom:auto;margin-top:5px;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.toy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0 0 8px}.toy-grid button{display:flex;align-items:center;justify-content:center;gap:5px;font-size:10px;padding:8px 2px;border:1px solid #e7e7e7;border-radius:6px;color:#777;background:#fbfbfb}.toy-grid button.selected{background:#ececec;color:#333}.toy-grid svg{width:15px;height:15px}
+
+.edge-actions{display:flex;gap:6px;margin-bottom:8px}.edge-actions button{flex:1;font-size:10px;padding:7px 4px;border:1px solid #e6e6e6;border-radius:6px;color:#888}.sports-grid button{font-size:9px;padding:8px 0}
+
+.pet-page.perched .pet-bubble{display:none}

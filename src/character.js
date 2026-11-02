@@ -68,7 +68,7 @@ export function poseCharacter(character,p,dt) {
   b.hips.position.y=THREE.MathUtils.lerp(b.hips.position.y,.5-p.sit*.30,alpha);
   b.hips.position.z=THREE.MathUtils.lerp(b.hips.position.z,-p.sit*.12,alpha);
   rot('hips',p.sit*.09);rot('torso',-p.sit*.08+p.breath+(p.torsoX||0),0,p.sway*.12);
-  rot('head',p.headX,p.headY,p.headZ);rot('armL',p.armLX,0,p.armL);rot('armR',p.armRX,0,p.armR);
+  rot('head',p.headX,p.headY,p.headZ);rot('armL',p.armLX,p.armLY||0,p.armL);rot('armR',p.armRX,p.armRY||0,p.armR);
   rot('legL',-p.sit*1.22+p.legL,p.sit*-.15,-p.sit*.12);rot('legR',-p.sit*1.22+p.legR,p.sit*.15,p.sit*.12);rot('tail',0,p.tail,0);
   for(const side of ['L','R']) { const eye=b['eye'+side];rot('eye'+side,-p.gazeY*.20,p.gazeX*.26,0);eye.scale.y=THREE.MathUtils.lerp(eye.scale.y,Math.max(.025,p['eye'+side]),1-Math.exp(-dt*32));eye.scale.x=THREE.MathUtils.lerp(eye.scale.x,p.wide,alpha); }
 }

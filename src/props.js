@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {tennisSample} from './tennis.mjs';
 
 const up=new THREE.Vector3(0,1,0),v=new THREE.Vector3(),mouth=new THREE.Vector3(),direction=new THREE.Vector3(),q=new THREE.Quaternion();
 const clamp=THREE.MathUtils.clamp;
@@ -38,10 +39,21 @@ export function createProps(scene){
   const petal=new THREE.Shape();petal.moveTo(0,0);petal.bezierCurveTo(.03,.23,.23,.32,.28,.12);petal.quadraticCurveTo(.18,.02,0,0);
   for(let i=0;i<4;i++){const p=mesh(rotor,new THREE.ExtrudeGeometry(petal,{depth:.014,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:.008,bevelThickness:.005,curveSegments:12}),mat(['#e8b09c','#afcbb3','#d0bfdc','#efd491'][i],.35));p.rotation.z=i*Math.PI/2;}
   sphere(rotor,.045,mat('#f8e8c9'),[0,0,.05]);
-  const all=[stool,candy,ball,pinwheel];all.forEach(o=>{o.visible=false;o.traverse(m=>{if(m.material)m.material=m.material.clone();});});
-  const pose={chair:0,eat:0,bites:0,ball:0,pinwheel:0};
+  const racket=new THREE.Group();racket.name='tennis-racket';racket.userData.action='tennis';scene.add(racket);
+  const frame=mat('#8db7a4',.38),handle=mat('#384d50',.85);
+  cylinder(racket,.034,.030,.30,handle,[0,.10,0]);cylinder(racket,.018,.018,.20,frame,[0,.32,0]);
+  const hoop=mesh(racket,new THREE.TorusGeometry(.24,.023,10,48),frame,[0,.72,0]);hoop.scale.y=1.32;
+  const strings=[];for(let i=-3;i<=3;i++){const a=i*.059,b=Math.sqrt(1-(a/.24)**2)*.316;strings.push(a,.72-b,0,a,.72+b,0);const y=i*.077,x=Math.sqrt(1-(y/.316)**2)*.24;strings.push(-x,.72+y,0,x,.72+y,0);}
+  const stringMesh=new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(strings,3)),new THREE.LineBasicMaterial({color:'#faf5de'}));racket.add(stringMesh);
+  const tennisBall=new THREE.Group();tennisBall.name='tennis-ball';tennisBall.userData.action='tennis';scene.add(tennisBall);
+  sphere(tennisBall,.112,mat('#c5dc42',.96),[0,0,0]);
+  const seam=[];for(let i=0;i<=80;i++){const a=i/80*Math.PI*2;seam.push(new THREE.Vector3(Math.cos(a)*.8,Math.sin(a),.6*Math.cos(2*a)).normalize().multiplyScalar(.114));}
+  mesh(tennisBall,new THREE.TubeGeometry(new THREE.CatmullRomCurve3(seam,true),80,.0045,5,true),mat('#ffffe4',.9));
+  const contact=new THREE.Vector3(),ballOffset=new THREE.Vector3(),rotation=new THREE.Euler();
+  const all=[stool,candy,ball,pinwheel,racket,tennisBall];all.forEach(o=>{o.visible=false;o.traverse(m=>{if(m.material)m.material=m.material.clone();});});
+  const pose={chair:0,eat:0,bites:0,ball:0,pinwheel:0,tennis:0,tennisKind:0,tennisPhase:''};
   function update(character,root,p,dt,paused=false){
-    Object.assign(pose,{chair:p.chair,eat:p.eat,bites:p.bites,ball:p.ball,pinwheel:p.pinwheel});
+    Object.assign(pose,{chair:p.chair,eat:p.eat,bites:p.bites,ball:p.ball,pinwheel:p.pinwheel,tennis:p.tennis,tennisKind:p.tennisKind});
     root.updateMatrixWorld(true);const s=root.scale.x;
     fade(stool,clamp(p.chair,0,1));stool.position.set(-.52,.20,-.13);stool.scale.setScalar(s*(.82+.18*p.chair));
     fade(candy,clamp(p.eat,0,1));
@@ -64,6 +76,20 @@ export function createProps(scene){
     if(pinwheel.visible){
       character.bone.armL.localToWorld(v.set(-.36,-.22,.12));pinwheel.position.copy(v);root.getWorldQuaternion(q);pinwheel.quaternion.copy(q);pinwheel.scale.setScalar(s);
       if(!paused)rotor.rotation.z+=dt*(4+Math.sin(p.toyTime*2)*2)*p.pinwheel;
+    }
+    fade(racket,clamp(p.tennis||0,0,1));fade(tennisBall,clamp(p.tennis||0,0,1));
+    if(racket.visible){
+      character.bone.armR.localToWorld(v.set(.46,-.18,.24));racket.position.copy(v);root.getWorldQuaternion(q);racket.quaternion.copy(q).multiply(new THREE.Quaternion().setFromEuler(rotation.set(.75,0,p.racketAngle||0)));racket.scale.setScalar(s);racket.updateMatrixWorld(true);
+      racket.localToWorld(contact.set(0,.72,.035));const a=tennisSample(Math.round(p.tennisKind),p.toyTime);pose.tennisPhase=a.phase;
+      if(a.celebrate)tennisBall.visible=false;
+      else if(a.toss){
+        const u=clamp((p.toyTime-.7)/2.4,0,1);root.localToWorld(v.set(-.65+1.5*u,1.02+Math.sin(u*Math.PI)*1.60+.55*u,1.05));
+        v.lerp(contact,Math.max(0,(u-.8)/.2));tennisBall.position.copy(v);
+      }else{
+        const d=clamp(a.delta/.9,-1,1);ballOffset.set(-d*.85,Math.sin(Math.abs(d)*Math.PI)*.32,d>.05?.40*d:.28*Math.abs(d)).applyQuaternion(q).multiplyScalar(s);tennisBall.position.copy(contact).add(ballOffset);
+        if(Math.abs(a.delta)>.95)tennisBall.visible=false;
+      }
+      tennisBall.scale.setScalar(s);if(!paused)tennisBall.rotation.x+=dt*5;
     }
   }
   function pickables(){const result=[];function visit(o){if(!o.visible)return;if(o.isMesh)result.push(o);for(const c of o.children)visit(c);}all.forEach(visit);return result;}

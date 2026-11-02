@@ -15,13 +15,16 @@ contextBridge.exposeInMainWorld('bay', {
   dragStart: point => ipcRenderer.send('pet:drag-start', point),
   dragEnd: options => ipcRenderer.send('pet:drag-end', options),
   movePet: (x,y) => ipcRenderer.send('pet:move', {x,y}),
+  dockEdge: side => ipcRenderer.send('edge:dock',side),
+  leaveEdge: () => ipcRenderer.send('edge:leave'),
+  reportGeometry: g => ipcRenderer.send('pet:geometry',g),
   home: () => ipcRenderer.send('pet:home'),
   openHelp: () => ipcRenderer.send('help:open'),
   reloadPet: () => ipcRenderer.send('pet:reload'),
   openReleases: () => ipcRenderer.send('releases:open'),
   quit: () => ipcRenderer.send('app:quit'),
   on: (channel, listener) => {
-    if (!['state', 'action', 'chat:delta', 'chat:status', 'panel:tab', 'bubble', 'cursor', 'pet:status','drag:ended','help:open'].includes(channel)) return () => {};
+    if (!['state', 'action', 'chat:delta', 'chat:status', 'panel:tab', 'bubble', 'cursor', 'pet:status','drag:ended','help:open','edge:changed'].includes(channel)) return () => {};
     const handler = (_event, data) => listener(data);
     ipcRenderer.on(channel, handler);
     return () => ipcRenderer.removeListener(channel, handler);
