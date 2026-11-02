@@ -11,3 +11,5 @@
 .edge-actions{display:flex;gap:6px;margin-bottom:8px}.edge-actions button{flex:1;font-size:10px;padding:7px 4px;border:1px solid #e6e6e6;border-radius:6px;color:#888}.sports-grid button{font-size:9px;padding:8px 0}
 
 .pet-page.perched .pet-bubble{display:none}
+.pet-name-button{font-size:12px;font-weight:600;max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 0;-webkit-app-region:no-drag;text-align:left;border-radius:3px}.pet-name-button:hover{color:#666}.pet-name-button:focus-visible{outline:1px solid #aaa;outline-offset:3px}.compact-status #presence-text{min-width:0;overflow:hidden;text-overflow:ellipsis}.pet-label #pet-name{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex-shrink:1}.titlebar #expression-text{white-space:nowrap}
+.pet-name-button::after{content:'✎';font-size:10px;color:#aaa;margin-left:5px;font-weight:400}

@@ -14,7 +14,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     pet=browser.contexts()[0].pages().find(p=>p.url().endsWith('pet.html'));assert.ok(pet,'actual Electron pet page');
     pet.on('pageerror',e=>errors.push(e.message));await pet.waitForFunction(()=>window.petDiagnostics?.ready);
     assert.equal((await pet.evaluate(()=>bay.getState())).history.length,0,'isolated smoke profile');
-    await pet.evaluate(async()=>{const s=await bay.getState();await bay.saveSettings({...s.settings,autoMotion:false});});
+    await pet.evaluate(async()=>{const s=await bay.getState();await bay.saveSettings({...s.settings,autoMotion:false,nickname:'球球'});});await pet.waitForFunction(()=>document.querySelector('#pet-name').textContent==='球球');
     await pet.evaluate(()=>bay.action('sit'));await pet.waitForFunction(()=>petDiagnostics.mode==='idle'&&petDiagnostics.posture==='sit');
     for(const[action,prop]of[['eat','tanghulu'],['ball','little-ball'],['pinwheel','little-pinwheel']]){
       await pet.evaluate(a=>bay.action(a),action);await pet.waitForTimeout(1200);assert.ok((await pet.evaluate(()=>petDiagnostics.props.visible)).includes(prop));

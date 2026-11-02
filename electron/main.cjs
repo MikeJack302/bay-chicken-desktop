@@ -45,6 +45,24 @@ function placePanel() {
 function sizePanel(tab='play') { const height=tab==='play'?390:tab==='chat'?500:520;const width=tab==='play'?280:340;const area=screen.getDisplayMatching(pet.getBounds()).workArea;panel.setResizable(true);panelSize={width,height:Math.min(height,area.height-24)};windowSizes.set(panel,panelSize);panel.setSize(panelSize.width,panelSize.height);panel.setResizable(false);placePanel(); }
 function openPanel(tab = 'play') { sizePanel(tab); panel.show(); panel.focus(); panel.webContents.send('panel:tab', tab); }
 function openHelp(){openPanel('play');panel.webContents.send('help:open');}
+function refreshIdentity(){
+  const name=state.settings.nickname,label=name.replace(/&/g,'&&');
+  pet?.setTitle(`${name} · 大湾鸡`);panel?.setTitle(name);
+  if(!tray)return;
+  let tooltipName='';for(const s of new Intl.Segmenter('zh',{granularity:'grapheme'}).segment(name)){if((tooltipName+s.segment).length>100)break;tooltipName+=s.segment;}
+  tray.setToolTip(`${tooltipName}${tooltipName===name?'':'…'} · 大湾鸡桌宠`);
+  tray.setContextMenu(Menu.buildFromTemplate([
+    {label:`陪${label}玩`,click:()=>{pet.show();openPanel('play');}},
+    {label:`找${label}聊天`,click:()=>{pet.show();openPanel('chat');}},
+    {label:'显示 / 隐藏桌宠（F8）',click:toggle},
+    {label:'回到屏幕右下角',click:home},
+    {label:'贴边休息',click:()=>setEdge(nearestEdge(pet.getBounds(),screen.getDisplayMatching(pet.getBounds()).workArea,Infinity))},
+    {label:'离开边缘',click:()=>setEdge(null)},
+    {label:'操作指南',click:openHelp},
+    {type:'separator'},{label:'设置',click:()=>openPanel('settings')},
+    {label:`退出${label}`,click:()=>{app.isQuitting=true;app.quit();}},
+  ]));
+}
 function home(){endDrag({dock:false});setEdge(null);const a=screen.getPrimaryDisplay().workArea;const[w,h]=pet.getSize();const p=clampToArea({x:a.x+a.width-w-40,y:a.y+a.height-h-40},w,h,a);positionWindow(pet,p);pet.show();state.position=p;placePanel();void persist().catch(console.error);}
 function toggle() { if (pet.isVisible()) { endDrag({dock:false});pet.webContents.send('drag:ended');pet.hide(); panel.hide(); } else { pet.show(); } }
 function edgeMessage(){if(pet&&!pet.isDestroyed())send('edge:changed',{side:edgeSide,visible:edgeSide&&edgeArea?visibleRect(pet.getBounds(),edgeArea):null});}
@@ -110,18 +128,7 @@ async function boot() {
   screen.on('display-metrics-changed',keepVisible);screen.on('display-removed',keepVisible);
   const image = nativeImage.createFromPath(path.join(__dirname, '../assets/icon.png'));
   tray = new Tray(image);
-  tray.setToolTip('湾湾 · 大湾鸡桌宠');
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: '陪湾湾玩', click: () => { pet.show(); openPanel('play'); } },
-    { label: '找湾湾聊天', click: () => { pet.show(); openPanel('chat'); } },
-    { label: '显示 / 隐藏桌宠（F8）', click: toggle },
-    { label: '回到屏幕右下角', click: home },
-    { label: '贴边休息', click:()=>setEdge(nearestEdge(pet.getBounds(),screen.getDisplayMatching(pet.getBounds()).workArea,Infinity)) },
-    { label:'离开边缘',click:()=>setEdge(null) },
-    { label: '操作指南', click: openHelp },
-    { type: 'separator' }, { label: '设置', click: () => openPanel('settings') },
-    { label: '退出湾湾', click: () => { app.isQuitting = true; app.quit(); } },
-  ]));
+  refreshIdentity();
   tray.on('double-click', () => { pet.show(); openPanel(); });
   shortcutStatus.toggle=globalShortcut.register('F8', toggle);
   shortcutStatus.panel=globalShortcut.register('CommandOrControl+Alt+B', () => { pet.show(); openPanel('play'); });
@@ -148,13 +155,14 @@ handle('settings:save', async value => {
     try { await persist(); } catch (error) { state = before; throw error; }
     key = nextKey;
     pet.setAlwaysOnTop(settings.alwaysOnTop); panel.setAlwaysOnTop(settings.alwaysOnTop);
+    refreshIdentity();
     if(before.settings.edgeSnap&&!settings.edgeSnap&&edgeSide)setEdge(null);send('state', publicState()); return { ok: true };
   } catch (error) { return { ok: false, error: error.message }; }
 });
 handle('history:clear', async () => { if (controller) return { ok: false, error: '请先停止当前回复。' }; state.history = []; await persist(); send('state', publicState()); return { ok: true }; });
 handle('chat:send', async text => {
   if (typeof text !== 'string' || !text.trim() || text.length > 8000) return { ok: false, error: '消息须为 1～8000 个字符。' };
-  if (controller) return { ok: false, error: '湾湾正在回复，稍等一下。' };
+  if (controller) return { ok: false, error: `${state.settings.nickname}正在回复，稍等一下。` };
   controller = new AbortController();
   const active = controller;
   const user = { role: 'user', content: text.trim() };
@@ -167,7 +175,7 @@ handle('chat:send', async text => {
   const timeout = setTimeout(() => active.abort(), 90000);
   try {
     const answer = connected ? await streamChat({ settings: state.settings, key, messages, signal: active.signal, fetchImpl: net.fetch.bind(net),
-      onDelta: delta => { partial += delta; send('chat:delta', delta); } }) : offlineReply(text);
+      onDelta: delta => { partial += delta; send('chat:delta', delta); } }) : offlineReply(text,state.settings.nickname);
     if (!connected) send('chat:delta', answer);
     state.history.push({ role: 'assistant', content: answer });
     await persist(); send('bubble', answer.slice(0, 90)); send('action', 'talk');

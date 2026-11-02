@@ -1,4 +1,5 @@
 import {tennisSample} from './tennis.mjs';
+import {perchPose} from './perch.mjs';
 export const ACTIONS=Object.freeze({stand:'站立',sit:'找凳子坐',wave:'招手',jump:'跳跃',dance:'跳舞',stretch:'伸懒腰',spin:'转圈',pet:'摸头',tickle:'挠痒痒',sleep:'打瞌睡',happy:'开心',curious:'好奇',wink:'眨眼',look:'张望',walk:'踏步',nod:'点头',shake:'摇头',bow:'鞠躬',balance:'金鸡独立',peek:'探头',yawn:'打哈欠',sigh:'放松',bounce:'连跳',eat:'吃糖葫芦',ball:'玩小球',pinwheel:'吹风车',sitDown:'找凳子坐',standUp:'起身',tennis:'网球对打',serve:'抛球发球',victory:'网球庆祝'});
 const durations={tennis:8.2,serve:6.7,victory:4.3,wave:3.6,jump:2.1,dance:9,stretch:5.2,spin:3.5,pet:3,tickle:3,happy:3.2,curious:4.1,wink:1.6,look:5,walk:5.5,nod:2.8,shake:3,bow:3.6,balance:4.5,peek:4.2,yawn:4.6,sigh:3.5,bounce:3.7,eat:6.8,ball:6.5,pinwheel:6,sitDown:4.5,standUp:2.6,talk:5,think:90};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -17,7 +18,7 @@ function start(m,name,automatic=false){
   if(!automatic){m.lastInteraction=m.clock;m.nextAuto=m.clock+9+m.random()*8;}
   m.variant=m.random();
 }
-export function createMotion(random=Math.random){return{edgeSide:null,mode:'idle',posture:'stand',chair:false,afterSeat:null,expression:'自然',paused:false,elapsed:0,clock:0,lastInteraction:0,nextAuto:5+random()*4,nextBlink:2+random()*3,blinkAt:-100,doubleBlink:false,gazeX:0,gazeY:0,headLookX:0,headLookY:0,glanceX:0,glanceY:0,nextGlance:1+random()*2,phase:random()*6.28,random,output:null,from:null,blendTime:1,blendDuration:.4,variant:random(),turnBase:0,lastMode:''};}
+export function createMotion(random=Math.random){return{edgeSide:null,edgeElapsed:0,mode:'idle',posture:'stand',chair:false,afterSeat:null,expression:'自然',paused:false,elapsed:0,clock:0,lastInteraction:0,nextAuto:5+random()*4,nextBlink:2+random()*3,blinkAt:-100,doubleBlink:false,gazeX:0,gazeY:0,headLookX:0,headLookY:0,glanceX:0,glanceY:0,nextGlance:1+random()*2,phase:random()*6.28,random,output:null,from:null,blendTime:1,blendDuration:.4,variant:random(),turnBase:0,lastMode:''};}
 export function trigger(m,name){
   if(name==='pause'){m.paused=!m.paused;return;}
   if(name==='reset-view')return;
@@ -31,6 +32,7 @@ function blink(now,at){const t=now-at;return smooth(0,.065,t)*(1-smooth(.065,.23
 export function stepMotion(m,dt,settings={},cursor={x:0,y:0,near:false}){
   if(m.paused&&m.output)return{...m.output};
   const speed=settings.motionSpeed||1;m.clock+=dt;m.elapsed+=dt*speed;m.blendTime+=dt;
+  if(m.edgeSide)m.edgeElapsed+=dt;
   let now=m.clock,t=m.elapsed;
   if(durations[m.mode]&&t>durations[m.mode]){if(m.mode==='spin')m.turnBase+=Math.PI*2;const next=m.mode==='sitDown'&&m.afterSeat?'sleep':'rest';start(m,next,true);t=0;}
   if(m.mode==='idle'&&settings.autoMotion!==false&&now>m.nextAuto){
@@ -44,6 +46,7 @@ export function stepMotion(m,dt,settings={},cursor={x:0,y:0,near:false}){
   if(m.doubleBlink){bl=Math.max(bl,blink(now,m.blinkAt+.35));br=Math.max(br,blink(now-.012,m.blinkAt+.35));}
   const sleep=m.mode==='sleep',happy=['pet','tickle','happy'].includes(m.mode),focus=settings.eyeTracking!==false&&cursor.near&&!sleep;
   let gx=focus?cursor.x:m.glanceX,gy=focus?cursor.y:m.glanceY;
+  if(focus&&m.edgeSide){const roll=(m.output?.edgeRoll||0)+(m.output?.headZ||0),x=gx;gx=x*Math.cos(roll)+gy*Math.sin(roll);gy=-x*Math.sin(roll)+gy*Math.cos(roll);}
   if(m.mode==='look'){gx=Math.sin(t*1.1)*.8;gy=Math.cos(t*.8)*.25;}
   if(m.mode==='think'){gx=.5;gy=.6;}
   if(m.mode==='peek')gx=.7;
@@ -51,7 +54,7 @@ export function stepMotion(m,dt,settings={},cursor={x:0,y:0,near:false}){
   m.headLookX=mix(m.headLookX,m.gazeX,1-Math.exp(-dt*3));m.headLookY=mix(m.headLookY,m.gazeY,1-Math.exp(-dt*3));
   const phase=m.phase,breath=Math.sin(now*1.9+phase),weight=Math.sin(now*.71+phase)*.65+Math.sin(now*1.13)*.35;
   const sitting=m.posture==='sit'?1:0;
-  const p={sit:sitting,x:(m.chair?-.52:0)+weight*.018,y:0,z:m.chair?-.13:0,chair:m.chair?1:0,seatLift:m.chair?.25:0,seatProgress:m.chair?1:0,eat:0,bites:0,ball:0,pinwheel:0,tennis:0,tennisKind:0,racketAngle:0,edgeAmount:0,edgeRoll:0,toyTime:t,scaleY:1+breath*.004,scaleX:1,spin:m.turnBase,yaw:0,sway:weight*.013,breath:breath*.006,torsoX:0,
+  const p={sit:sitting,x:(m.chair?-.52:0)+weight*.018,y:0,z:m.chair?-.13:0,chair:m.chair?1:0,seatLift:m.chair?.25:0,seatProgress:m.chair?1:0,eat:0,bites:0,ball:0,pinwheel:0,tennis:0,tennisKind:0,racketAngle:0,racketPitch:.65,racketYaw:0,edgeAmount:0,edgeRoll:0,toyTime:t,scaleY:1+breath*.004,scaleX:1,spin:m.turnBase,yaw:0,sway:weight*.013,breath:breath*.006,torsoX:0,
     headX:-m.headLookY*.12,headY:m.headLookX*.19,headZ:Math.sin(now*.67+phase)*.014,
     armL:-.025+Math.sin(now*1.32+phase)*.022,armR:.025+Math.sin(now*1.17+phase+1)*.022,armLX:0,armRX:0,armRY:0,armLY:0,
     legL:Math.sin(now*.71+phase)*.016,legR:-Math.sin(now*.71+phase)*.016,tail:Math.sin(now*1.55+phase+.7)*.065+Math.sin(now*2.3)*.02,
@@ -82,10 +85,14 @@ export function stepMotion(m,dt,settings={},cursor={x:0,y:0,near:false}){
   }
   if(['tennis','serve','victory'].includes(m.mode)){
     const k=m.mode==='serve'?1:m.mode==='victory'?2:0,a=tennisSample(k,t);
-    p.tennis=e;p.tennisKind=k;p.armR=(.42+.68*a.prepare-.95*a.swing+.55*a.follow)*e;p.armRX=(.20+.20*a.swing)*e;p.armRY=(-.40-.55*a.swing)*e;
-    p.racketAngle=(.25-.7*a.prepare+.85*a.follow)*e;p.armL=(-.24-.6*(a.toss?Math.sin(Math.min(1,t/2.3)*Math.PI):0))*e;p.armLX=.20*e;
-    p.torsoX+=.05*a.prepare*e;p.yaw=(.10*a.prepare-.16*a.swing)*e;p.x+=(a.swing*.06-a.follow*.03)*e;
-    p.legL+=Math.sin(t*7)*.13*e;p.legR-=Math.sin(t*7)*.13*e;p.x+=Math.sin(t*2.8)*.055*e;p.headY+=(a.delta<0?.10:-.12)*e;p.gazeX=a.toss?(-.7+1.5*clamp((t-.7)/2.4,0,1)):a.delta<0?.7:-.6;p.gazeY=a.toss?.7:.15;p.expression=a.phase;
+    const follow=a.followThrough,windup=a.windup;
+    p.tennis=e;p.tennisKind=k;p.armR=(.32+.24*windup+.18*follow)*e;p.armRX=(.24+.16*a.swing)*e;p.armRY=(-.48-.22*windup-.48*follow)*e;
+    p.racketAngle=(-.12-.82*windup+1.18*follow)*e;p.racketPitch=.70-.16*a.swing+.20*follow;p.racketYaw=-.28*windup+.10*follow;
+    p.armL=(-.27-.22*windup+.10*follow)*e;p.armLX=.16*e;
+    p.torsoX+=(.035*windup+.025*a.swing)*e;p.yaw=(.22*windup-.24*follow)*e;p.x+=(windup*.035-follow*.055)*e;p.y-=windup*.018*e;
+    const steps=Math.exp(-Math.pow((a.delta+.65)/.26,2));p.legL+=.13*steps*e;p.legR-=.09*steps*e;p.legL-=.035*follow*e;
+    p.headY+=(.10*windup-.10*follow)*e;p.gazeX=.7-1.35*smooth(-.06,.65,a.delta);p.gazeY=.1+.12*a.swing;p.expression=a.phase;
+    if(k===1){const toss=smooth(.35,1.2,t)*(1-smooth(1.9,2.6,t));p.armL=(-.25-.88*toss)*e;p.armLX=.30*e;p.armR=(.4+1.02*windup+.70*a.swing+.25*follow)*e;p.racketAngle=(-.25-.50*windup+.95*follow)*e;p.racketPitch=.72-.10*a.swing;p.headX-=.11*toss*e;p.gazeX=a.toss?-.5+1.2*clamp((t-.7)/2.4,0,1):-.6;p.gazeY=a.toss?.65:.15;}
     if(k===2){p.armR=(1.0+Math.sin(t*5)*.15)*e;p.racketAngle=-.4;p.y+=Math.abs(Math.sin(t*4))*.055*e;p.eyeL*=.55;p.eyeR*=.55;p.expression='好球！';}
   }
   if(m.mode==='wave'){p.armR=(.9+Math.sin(t*8.4)*.18)*e;p.headZ-=.045*e;p.armRX=-.1*e;p.tail+=Math.sin(t*4)*.08*e;}
@@ -120,14 +127,14 @@ export function stepMotion(m,dt,settings={},cursor={x:0,y:0,near:false}){
   if(m.mode==='talk'){p.headX+=Math.sin(t*3.7)*.025*e;p.armR+=.15*e;p.expression='回应你';}
   if(m.mode==='think'){p.headZ+=Math.sin(t*.9)*.04;p.expression='想一想';}
   if(m.edgeSide){
-    p.edgeAmount=1;p.edgeRoll={left:-Math.PI/2,right:Math.PI/2,top:Math.PI,bottom:0}[m.edgeSide];
-    p.chair=0;p.seatLift=0;p.sit=0;p.x=0;p.z=0;p.y=.22;p.sway=Math.sin(now*.8)*.012;p.torsoX=.62;p.headX=-.72+Math.sin(now*.7)*.018;
-    p.armL=-1.25;p.armR=1.25;p.armLX=.18;p.armRX=.18;p.armLY=0;p.armRY=0;
-    p.legL=-.48+Math.sin(now*1.8)*.10;p.legR=-.48+Math.sin(now*1.8+1.1)*.10;p.tail+=Math.sin(now*2)*.10;
-    if(m.mode==='idle')p.expression='趴边陪你';
+    const edge=perchPose(m.edgeSide,m.edgeElapsed,now,phase);
+    p.edgeAmount=1;p.edgeRoll=edge.edgeRoll;p.chair=0;p.seatLift=0;p.sit=0;p.x=0;p.z=0;p.y=edge.y;p.sway=0;p.torsoX=edge.torsoX;
+    p.headX+=edge.headX;p.headZ+=edge.headZ;p.armL=edge.armL;p.armR=edge.armR;p.armLX=edge.armLX;p.armRX=edge.armRX;p.armLY=0;p.armRY=0;
+    p.legL=edge.legL;p.legR=edge.legR;p.tail+=Math.sin(now*1.35)*.045;
+    if(m.mode==='idle')p.expression=edge.settle;
   }
   if(m.from){const blend=smooth(0,m.blendDuration,m.blendTime);for(const key of Object.keys(p))if(typeof p[key]==='number'&&typeof m.from[key]==='number')p[key]=mix(m.from[key],p[key],blend);if(blend>=1)m.from=null;}
   p.eyeL=clamp(p.eyeL,0,1);p.eyeR=clamp(p.eyeR,0,1);m.expression=p.expression;m.output={...p};return p;
 }
 
-export function setPerch(m,side){if(m.edgeSide===side)return;m.edgeSide=side;start(m,'stand');m.blendDuration=.85;}
+export function setPerch(m,side){if(m.edgeSide===side)return;m.edgeSide=side;m.edgeElapsed=0;start(m,'stand');m.blendDuration=side?1.05:.65;}

@@ -3,7 +3,11 @@ const DEFAULTS = Object.freeze({
   voice: false, alwaysOnTop: true, skin: 'white', scale: 1, nickname: '湾湾',
   edgeSnap:true, autoMotion: true, eyeTracking: true, motionSpeed: 1, motionIntensity: 1,
 });
-const PERSONA = '你是用户的三维桌宠湾湾，一只以大湾鸡为灵感的可爱白色小伙伴。主要用简体中文，温暖、机灵，偶尔自然说一句粤语。闲聊回复尽量简短，遇到认真问题就认真回答。不要自称官方吉祥物。不要假装看得到屏幕、操作电脑、拥有本应用没有的能力，或声称记得未提供的对话。';
+const PERSONA = '你是用户的三维桌宠，一只以大湾鸡为灵感的可爱小伙伴。主要用简体中文，温暖、机灵，偶尔自然说一句粤语。闲聊回复尽量简短，遇到认真问题就认真回答。不要自称官方吉祥物。不要假装看得到屏幕、操作电脑、拥有本应用没有的能力，或声称记得未提供的对话。';
+function petName(value) {
+  const clean=String(value??'').normalize('NFC').replace(/[\u0000-\u001f\u007f-\u009f\u200b\u202a-\u202e\u2066-\u2069\ufeff]/gu,'').replace(/\s+/gu,' ').trim();
+  return Array.from(new Intl.Segmenter('zh',{granularity:'grapheme'}).segment(clean),s=>s.segment).slice(0,16).join('')||DEFAULTS.nickname;
+}
 
 function validateSettings(value) {
   const s = { ...DEFAULTS, ...value };
@@ -17,7 +21,7 @@ function validateSettings(value) {
   if (typeof s.model !== 'string' || !s.model.trim() || s.model.length > 100) throw Error('请填写模型名称。');
   return { provider: s.provider, endpoint: url.href.replace(/\/+$/, ''), model: s.model.trim(),
     voice: !!s.voice, alwaysOnTop: !!s.alwaysOnTop, skin: s.skin === 'pink' ? 'pink' : 'white',
-    scale: Math.max(0.7, Math.min(1.35, Number(s.scale) || 1)), nickname: String(s.nickname || '湾湾').slice(0, 16),
+    scale: Math.max(0.7, Math.min(1.35, Number(s.scale) || 1)), nickname: petName(s.nickname),
     edgeSnap:s.edgeSnap!==false, autoMotion: s.autoMotion !== false, eyeTracking: s.eyeTracking !== false,
     motionSpeed: Math.max(.6, Math.min(1.6, Number(s.motionSpeed)||1)), motionIntensity: Math.max(.5, Math.min(1.3, Number(s.motionIntensity)||1)) };
 }
@@ -50,9 +54,10 @@ async function streamChat({ settings, key, messages, signal, onDelta, fetchImpl 
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(s.endpoint).hostname);
   if (!key && !local) throw Error('先在设置中填写 API Key，或使用本机模型接口。');
   const input = messages.slice(-24).map(m => ({ role: m.role, content: m.content.slice(0, 8000) }));
+  const persona=PERSONA+` 用户给你起的名字是 ${JSON.stringify(s.nickname)}。这是昵称，使用这个称呼介绍自己。`;
   const body = s.provider === 'openai'
-    ? { model: s.model, instructions: PERSONA, input, stream: true, store: false, max_output_tokens: 1600 }
-    : { model: s.model, messages: [{ role: 'system', content: PERSONA }, ...input], stream: true, max_tokens: 1600 };
+    ? { model: s.model, instructions: persona, input, stream: true, store: false, max_output_tokens: 1600 }
+    : { model: s.model, messages: [{ role: 'system', content: persona }, ...input], stream: true, max_tokens: 1600 };
   const response = await fetchImpl(s.endpoint + (s.provider === 'openai' ? '/responses' : '/chat/completions'), {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}) },
     body: JSON.stringify(body), signal, redirect: 'error',
@@ -77,8 +82,8 @@ async function streamChat({ settings, key, messages, signal, onDelta, fetchImpl 
   if (!full?.trim()) throw Error('模型没有返回文字，请检查模型是否支持文字对话。');
   return full;
 }
-function offlineReply(text) {
-  if (/你好|嗨|hello|在吗/i.test(text)) return '在呀！湾湾报到～点点我的脑袋，我会给你一个开心蹦蹦。';
+function offlineReply(text,nickname=DEFAULTS.nickname) {
+  if (/你好|嗨|hello|在吗/i.test(text)) return `在呀！${petName(nickname)}报到～点点我的脑袋，我会给你一个开心蹦蹦。`;
   if (/累|难过|烦|压力/.test(text)) return '先陪你歇一会儿。伸伸肩膀、饮啖水，我在这里陪着你。';
   if (/跳舞|整活/.test(text)) return '收到，湾区舞王申请出战！点一下「跳舞」，看我发挥～';
   return '我现在是离线陪伴模式，只会几句小回应。打开设置接上 AI，就能认真和你聊这个啦。';

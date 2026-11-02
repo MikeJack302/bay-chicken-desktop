@@ -34,7 +34,7 @@ function resizeScene(){const w=innerWidth,h=innerHeight,dpr=Math.min(devicePixel
 new ResizeObserver(resizeScene).observe(document.documentElement);window.addEventListener('resize',resizeScene);
 function watchDpi(){matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener('change',()=>{resizeScene();watchDpi();},{once:true});}watchDpi();
 let edgeMode=null,edgeVisible=null,edgeTransition=0,lastGeometry=0;
-function updateEdge(side){if(side===edgeMode)return;edgeMode=side;document.body.classList.toggle('perched',!!side);setPerch(motion,side);if(side)resetOrbit(orbit);lastPose=null;edgeTransition=performance.now()+1100;if(side)say({left:'抓住左边啦。',right:'在右边偷偷看你。',top:'倒挂一下，晃晃腿。',bottom:'趴在这里陪你。'}[side]);}
+function updateEdge(side){if(side===edgeMode)return;edgeMode=side;document.body.classList.toggle('perched',!!side);setPerch(motion,side);if(side){const distance=orbit.targetDistance;resetOrbit(orbit);orbit.targetDistance=distance;}lastPose=null;edgeTransition=performance.now()+1400;if(side)say({left:'抓住左边啦。',right:'在右边偷偷看你。',top:'抓牢啦，探头看看你。',bottom:'趴在这里陪你。'}[side]);}
 function inVisible(x,y){return !edgeVisible||(x>=edgeVisible.left&&x<=Math.min(innerWidth,edgeVisible.right)&&y>=edgeVisible.top&&y<=Math.min(innerHeight,edgeVisible.bottom));}
 api.on('edge:changed',({side,visible})=>{updateEdge(side);edgeVisible=visible;canvas.style.clipPath=visible?`inset(${visible.top}px ${Math.max(0,innerWidth-visible.right)}px ${Math.max(0,innerHeight-visible.bottom)}px ${visible.left}px)`:'';});
 let config={skin:'white',scale:1,autoMotion:true,eyeTracking:true,motionSpeed:1,motionIntensity:1},ready=false;
@@ -54,11 +54,11 @@ const lines={stand:'站好啦。',sit:'找到小凳子啦，挪过去坐一会�
 function action(name){
   if(name==='reset-view'){resetOrbit(orbit);return;}
   if(name==='pet')say(['摸摸头，烦恼飞走～','嘿嘿，再摸一下嘛。','被你摸摸，开心加倍。'][Math.floor(Math.random()*3)]);
-  else if(lines[name])say(lines[name]);
+  else if(lines[name])say(lines[name],['tennis','serve'].includes(name)?900:4200);
   trigger(motion,name);
 }
 api.on('action',action);api.on('bubble',text=>say(text,7000));
-function settings(state){config=state.settings;updateEdge(state.edge||null);if(ready)selectModel();}
+function settings(state){const previous=config.nickname;config=state.settings;document.title=`${config.nickname} · 大湾鸡`;document.querySelector('#pet-name').textContent=config.nickname;document.querySelector('#load-status').textContent=`${config.nickname}正在醒来…`;if(previous&&previous!==config.nickname)say(`以后就叫我${config.nickname}啦。`);updateEdge(state.edge||null);if(ready)selectModel();}
 api.on('state',settings);api.getState().then(settings);
 function updateCursor(x,y){cursor={x:THREE.MathUtils.clamp((x-innerWidth/2)/(innerWidth*.65),-1,1),y:THREE.MathUtils.clamp((innerHeight*.44-y)/(innerHeight*.55),-1,1),near:x> -innerWidth*.4&&x<innerWidth*1.4&&y> -innerHeight*.3&&y<innerHeight*1.3};document.body.classList.toggle('near',x>0&&x<innerWidth&&y>0&&y<innerHeight);}
 function updateHit(x,y){if(pointer||dragging)return;const inside=x>=0&&y>=0&&x<innerWidth&&y<innerHeight&&inVisible(x,y);
