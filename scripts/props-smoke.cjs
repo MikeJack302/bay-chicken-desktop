@@ -38,12 +38,12 @@ const assert=require('node:assert/strict');const path=require('node:path');const
     assert.ok(new Set(reactions).size>=2);
     for(const[part,x,y]of[['crown',176,92],['eyes',104,185],['belly',160,275],['hands',83,281],['feet',140,325]]){
       await pet.evaluate(()=>bay.action('stand'));await settle();if(part==='eyes')await pet.waitForFunction(()=>petDiagnostics.rig.eyeL>.9&&petDiagnostics.rig.eyeR>.9);
-      await pet.mouse.click(x,y);await pet.waitForTimeout(250);assert.equal((await pet.evaluate(()=>petDiagnostics.interaction)).part,part);
+      await pet.mouse.click(x,y);await pet.waitForTimeout(500);assert.equal((await pet.evaluate(()=>petDiagnostics.interaction)).part,part);
     }
     await pet.evaluate(()=>bay.action('stand'));await pet.mouse.move(160,180);await pet.keyboard.down('Shift');await pet.mouse.wheel(0,Math.PI/.004);await pet.keyboard.up('Shift');
     for(const[part,x,y]of[['back',160,200],['tail',160,300]]){
       await pet.evaluate(()=>bay.action('stand'));await pet.waitForFunction(()=>petDiagnostics.mode==='idle');await settle();
-      await pet.mouse.click(x,y);await pet.waitForTimeout(250);assert.equal((await pet.evaluate(()=>petDiagnostics.interaction)).part,part);
+      await pet.mouse.click(x,y);await pet.waitForTimeout(500);assert.equal((await pet.evaluate(()=>petDiagnostics.interaction)).part,part);
     }
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({passed:true,checks:['canvas resize and pixel ratio','dock proximity at three scales and tall viewport','find stool and sit','stool retained during toy interactions','toy buttons and sugar fruit eaten in stages','ball and pinwheel','click stool to stand and clean props','eight actual body regions and nonrepeating head reactions'],reactions},null,2));

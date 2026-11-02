@@ -4,7 +4,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 (async()=>{
   const server=net.createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const port=server.address().port;await new Promise(resolve=>server.close(resolve));
   const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
-  const file=path.resolve('release/exe/BayChicken-Portable-0.4.0-x64.exe');
+  const file=path.resolve(`release/exe/BayChicken-Portable-${require('../package.json').version}-x64.exe`);
   const child=spawn(file,['--smoke','--remote-debugging-address=127.0.0.1',`--remote-debugging-port=${port}`],{env,stdio:'ignore',windowsHide:true});
   let browser,pet;const errors=[];
   try{

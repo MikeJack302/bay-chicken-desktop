@@ -18,7 +18,7 @@ const out=path.resolve('docs/share/raw');
     await act('stand');await capture('white-front');
     for(const[name,delta]of[['white-side',Math.PI/2],['white-back',Math.PI/2]]){await pet.keyboard.down('Shift');await pet.mouse.wheel(0,delta/.004);await pet.keyboard.up('Shift');await capture(name,900);}
     await act('reset-view');await pet.waitForTimeout(900);
-    await pet.mouse.move(310,320);await pet.mouse.down();await pet.mouse.move(310,395,{steps:12});await pet.mouse.up();await capture('white-top',900);
+    await pet.mouse.move(310,320);await pet.mouse.down({button:"right"});await pet.mouse.move(310,395,{steps:12});await pet.mouse.up({button:"right"});await capture('white-top',900);
     await act('reset-view');await pet.waitForTimeout(850);await pet.mouse.move(2,2);
     await act('sit');await capture('seat-find',550);await capture('seat-walk',1200);
     await pet.waitForFunction(()=>petDiagnostics.mode==='idle');await capture('seat-done',500);

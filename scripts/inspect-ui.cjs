@@ -3,10 +3,10 @@ const assert=require('node:assert/strict');
 const path=require('node:path');
 (async()=>{
   const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
-  const app=await _electron.launch({executablePath:path.resolve('release/BayChicken/electron.exe'),args:['--smoke'],env});
+  const app=await _electron.launch({executablePath:process.env.BAY_EXECUTABLE||path.resolve('node_modules/electron/dist/electron.exe'),args:[...(process.env.BAY_EXECUTABLE?[]:[path.resolve('.')]),'--smoke'],env});
   try{
     const pet=app.windows().find(p=>p.url().endsWith('pet.html'))||await app.waitForEvent('window',{predicate:p=>p.url().endsWith('pet.html')});
-    await pet.waitForFunction(()=>petDiagnostics?.ready);
+    await pet.waitForFunction(()=>window.petDiagnostics?.ready);
     await pet.evaluate(()=>bay.openPanel('play'));
     const panel=app.windows().find(p=>p.url().endsWith('panel.html'));
     await panel.waitForFunction(()=>innerWidth<290);

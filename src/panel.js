@@ -35,6 +35,8 @@ function fillSettings() {
 }
 function update(next) {
   state = next;
+  $('#app-version').textContent=`湾湾 v${state.version}`;
+  $('#shortcut-status').textContent=`${state.shortcuts?.toggle?'F8 显示 / 隐藏':'F8 被占用，请使用托盘'} · ${state.shortcuts?.panel?'Ctrl + Alt + B 打开面板':'面板快捷键被占用，可点「…」'}`;
   $('.connection').classList.toggle('online', state.connected);
   $('#connection-label').textContent = state.connected ? `AI 已配置 · ${state.settings.model}` : '离线陪伴 · 预设回应';
   $('#connect-link').textContent = state.connected ? '连接设置 ↗' : '连接 AI ↗';
@@ -94,6 +96,12 @@ $('#settings-form').onsubmit = async e => {
   } catch { $('#settings-feedback').textContent = '保存失败，请重新打开桌宠后重试。'; } finally { button.disabled = false; }
 };
 $('#quit').onclick = () => api.quit();
+const help=$('#controls-help');
+function showHelp(){if(!help.open)help.showModal();}
+$('#show-help').onclick=showHelp;
+$('#home-pet').onclick=()=>api.home();
+$('#release-link').onclick=()=>api.openReleases();
+api.on('help:open',showHelp);
 function renderPet(p) {
   if (!p) return;
   const labels={wave:'招手',dance:'跳舞',jump:'开心蹦蹦',stretch:'伸懒腰',spin:'转圈',pet:'享受摸头',tickle:'被挠痒痒',sleep:'打瞌睡',curious:'歪头想事情',wink:'给你眨眼',look:'左顾右盼',happy:'开心眯眼',sitDown:'找凳子坐',standUp:'从凳子起身',eat:'吃糖葫芦',ball:'玩小球',pinwheel:'吹风车'};

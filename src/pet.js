@@ -6,14 +6,17 @@ import { createOrbit,rotateOrbit,zoomOrbit,resetOrbit,stepOrbit } from './orbit.
 import { createProps } from './props.js';
 import { dockAnchor } from './layout.mjs';
 import { createInteractionState,chooseReaction,surfacePart } from './interactions.mjs';
+import { beginGesture,moveGesture,gestureResult } from './gestures.mjs';
 import whiteBytes from '../assets/models/white.glb';
 import pinkBytes from '../assets/models/pink.glb';
 
 const api=window.bay,canvas=document.querySelector('canvas'),bubble=document.querySelector('#bubble'),dock=document.querySelector('#pet-dock');
 decorateIcons();
+function showError(message){document.querySelector('#load-status').hidden=true;document.querySelector('#load-error').hidden=false;document.querySelector('#error-message').textContent=message;document.querySelector('#pet-dock').hidden=true;}
+document.querySelector('#retry-load').onclick=()=>api.reloadPet();
 let renderer;
 try { renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'}); }
-catch { bubble.textContent='三维渲染不可用，请更新显卡驱动后重启。';throw Error('WebGL unavailable'); }
+catch { showError('三维显示暂时不可用，请重试或更新显卡驱动。');throw Error('WebGL unavailable'); }
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.setSize(innerWidth,innerHeight,false);renderer.setClearColor(0,0);
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04;
 const scene=new THREE.Scene(),aspect=innerWidth/innerHeight;
@@ -31,7 +34,7 @@ function resizeScene(){const w=innerWidth,h=innerHeight,dpr=Math.min(devicePixel
 new ResizeObserver(resizeScene).observe(document.documentElement);window.addEventListener('resize',resizeScene);
 function watchDpi(){matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener('change',()=>{resizeScene();watchDpi();},{once:true});}watchDpi();
 let config={skin:'white',scale:1,autoMotion:true,eyeTracking:true,motionSpeed:1,motionIntensity:1},ready=false;
-Promise.all([[whiteBytes,'white'],[pinkBytes,'pink']].map(async([bytes,name])=>{const c=await loadCharacter(bytes,name);models[name]=c;modelInfo[name]=c.info;root.add(c.group);})).then(()=>{ready=true;selectModel();}).catch(error=>{say('模型加载失败，请重新打开桌宠。',60000);console.error(error);});
+Promise.all([[whiteBytes,'white'],[pinkBytes,'pink']].map(async([bytes,name])=>{const c=await loadCharacter(bytes,name);models[name]=c;modelInfo[name]=c.info;root.add(c.group);})).then(()=>{ready=true;selectModel();document.querySelector('#load-status').hidden=true;dock.hidden=false;say('左键拖动搬家 · 右键拖动旋转\n轻点互动 · 滚轮缩放',7000);}).catch(error=>{showError('模型未能加载。点击重试，或重新打开桌宠。');console.error(error);});
 function selectModel(){for(const [name,c]of Object.entries(models))c.group.visible=name===config.skin;}
 const shadowCanvas=document.createElement('canvas');shadowCanvas.width=128;shadowCanvas.height=128;
 const ctx=shadowCanvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,8,64,64,64);gradient.addColorStop(0,'rgba(0,0,0,.15)');gradient.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
@@ -52,9 +55,9 @@ function action(name){
 }
 api.on('action',action);api.on('bubble',text=>say(text,7000));
 function settings(state){config=state.settings;if(ready)selectModel();}
-api.on('state',settings);api.getState().then(settings);say('拖动转一转，看看我的另一面。',3800);
+api.on('state',settings);api.getState().then(settings);
 function updateCursor(x,y){cursor={x:THREE.MathUtils.clamp((x-innerWidth/2)/(innerWidth*.65),-1,1),y:THREE.MathUtils.clamp((innerHeight*.44-y)/(innerHeight*.55),-1,1),near:x> -innerWidth*.4&&x<innerWidth*1.4&&y> -innerHeight*.3&&y<innerHeight*1.3};document.body.classList.toggle('near',x>0&&x<innerWidth&&y>0&&y<innerHeight);}
-function updateHit(x,y){if(pointer)return;const inside=x>=0&&y>=0&&x<innerWidth&&y<innerHeight;
+function updateHit(x,y){if(pointer||dragging)return;const inside=x>=0&&y>=0&&x<innerWidth&&y<innerHeight;
   const ui=inside&&document.elementsFromPoint(x,y).some(el=>el.matches('button,nav,[data-interactive]'));
   const next=!(inside&&(ui||hit(x,y)));ignore=next;api.ignoreMouse(next);
 }
@@ -63,15 +66,16 @@ document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>api.action(b
 document.querySelector('#more-actions').onclick=()=>api.togglePanel();
 document.querySelector('#reset-view').onclick=()=>action('reset-view');
 const mover=document.querySelector('#move-pet');
-mover.onpointerdown=e=>{e.preventDefault();mover.setPointerCapture(e.pointerId);api.ignoreMouse(false);api.dragStart();dragging=true;};
-function endMove(){if(dragging&&!pointer){dragging=false;api.dragEnd();}}
-mover.onpointerup=endMove;mover.onpointercancel=endMove;mover.onlostpointercapture=endMove;
+let clickTimer;
+mover.onpointerdown=e=>{if(e.button===0)press(e,true);};
 window.addEventListener('pointermove',e=>{
   updateCursor(e.clientX,e.clientY);updateHit(e.clientX,e.clientY);
-  canvas.style.cursor=hit(e.clientX,e.clientY)?(pointer?'grabbing':'grab'):'default';
-  if(pointer){const dx=e.clientX-pointer.lastX,dy=e.clientY-pointer.lastY;pointer.lastX=e.clientX;pointer.lastY=e.clientY;
-    if(Math.hypot(e.clientX-pointer.x,e.clientY-pointer.y)>4)pointer.moved=true;
-    if(pointer.moved){if(pointer.moveWindow){if(!dragging){dragging=true;api.dragStart();}}else{orbit.dragging=true;rotateOrbit(orbit,dx,dy);}}
+  canvas.style.cursor=pointer?.moved?'grabbing':hit(e.clientX,e.clientY)?'grab':'default';
+  if(pointer){
+    if(e.buttons===0)return finish(e,true);
+    const change=moveGesture(pointer,e);if(!change)return;
+    if(change.started)clearTimeout(clickTimer);
+    if(change.moving){if(change.purpose==='move'){if(!dragging){dragging=true;api.dragStart({x:pointer.x,y:pointer.y});}}else{orbit.dragging=true;rotateOrbit(orbit,change.dx,change.dy);}}
   }
 });
 const facePoint=new THREE.Vector3(),faceVertex=new THREE.Vector3();
@@ -80,13 +84,43 @@ function pickedPart(selected){
   if(face){for(const index of [face.a,face.b,face.c])facePoint.add(faceVertex.fromBufferAttribute(attr,index));facePoint.multiplyScalar(1/3);}else facePoint.copy(root.worldToLocal(selected.point.clone()));
   return surfacePart(facePoint,selected.object.userData.bodyPart);
 }
-canvas.addEventListener('pointerdown',e=>{const selected=pick(e.clientX,e.clientY);if(!selected)return;pointer={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,moved:false,button:e.button,moveWindow:e.shiftKey||e.button===1,propAction:props.actionFor(selected.object),part:pickedPart(selected)};orbit.velocityX=orbit.velocityY=0;canvas.setPointerCapture(e.pointerId);api.ignoreMouse(false);});
-function release(e){if(!pointer)return;const old=pointer;pointer=null;orbit.dragging=false;if(dragging){dragging=false;api.dragEnd();}if(e?.type!=='pointercancel'&&!old.moved){if(old.button===0){let selected=old.propAction;if(selected==='sit'&&motion.posture==='sit')selected='stand';if(!selected)selected=chooseReaction(interaction,old.part,{sleeping:motion.mode==='sleep',current:motion.mode});api.action(selected);}else if(old.button===2)api.openPanel('play');}}
-canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);window.addEventListener('blur',()=>{pointer=null;orbit.dragging=false;dragging=false;api.dragEnd();});
-canvas.addEventListener('dblclick',e=>{if(hit(e.clientX,e.clientY))action('reset-view');});
+function press(e,forceMove=false){
+  if(pointer)return;const selected=forceMove?null:pick(e.clientX,e.clientY);if(!forceMove&&!selected)return;
+  const gesture=beginGesture(e,forceMove);if(!gesture)return;e.preventDefault();canvas.focus({preventScroll:true});
+  pointer={...gesture,element:e.currentTarget,propAction:selected?props.actionFor(selected.object):null,part:selected?pickedPart(selected):null};
+  orbit.velocityX=orbit.velocityY=0;e.currentTarget.setPointerCapture(e.pointerId);ignore=false;api.ignoreMouse(false);
+}
+function finish(e,cancelled=false,rollback=false){
+  if(!pointer||(e?.pointerId!==undefined&&e.pointerId!==pointer.id))return;
+  const old=pointer,result=gestureResult(old,cancelled);pointer=null;orbit.dragging=false;
+  if(cancelled)orbit.velocityX=orbit.velocityY=0;
+  if(old.element.hasPointerCapture(old.id))old.element.releasePointerCapture(old.id);
+  if(dragging){dragging=false;api.dragEnd({cancel:rollback});}
+  if(result==='click'&&(old.part||old.propAction)){
+    clearTimeout(clickTimer);clickTimer=setTimeout(()=>{let selected=old.propAction;if(selected==='sit'&&motion.posture==='sit')selected='stand';if(!selected)selected=chooseReaction(interaction,old.part,{sleeping:motion.mode==='sleep',current:motion.mode});api.action(selected);},350);
+  }else if(result==='menu')api.openPanel('play');
+  canvas.style.cursor='grab';ignore=null;
+}
+canvas.addEventListener('pointerdown',e=>press(e));
+window.addEventListener('pointerup',e=>{if(pointer&&e.button===pointer.button)finish(e);});
+window.addEventListener('pointercancel',e=>finish(e,true));
+for(const el of[canvas,mover])el.addEventListener('lostpointercapture',e=>finish(e,true));
+window.addEventListener('blur',()=>{clearTimeout(clickTimer);finish(null,true);});
+api.on('drag:ended',()=>finish(null,true));
+canvas.addEventListener('dblclick',e=>{clearTimeout(clickTimer);if(e.button===0&&hit(e.clientX,e.clientY))action('reset-view');});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();clearTimeout(clickTimer);finish(null,true);showError('三维显示已中断，点击重新加载恢复。');});
 canvas.addEventListener('wheel',e=>{e.preventDefault();if(e.shiftKey)orbit.targetYaw+=e.deltaY*.004;else zoomOrbit(orbit,e.deltaY);},{passive:false});
-canvas.addEventListener('keydown',e=>{const keys={'1':'stand','2':'sit','3':'dance','4':'jump','5':'wave','6':'sleep',' ':'pet'};if(keys[e.key]){e.preventDefault();api.action(keys[e.key]);}if(e.key==='Enter')api.openPanel('play');if(e.key==='Escape'||e.key==='r')action('reset-view');});
+canvas.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();clearTimeout(clickTimer);finish(null,true,true);return;}
+  if(pointer)return;
+  const arrows={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+  if(arrows[e.key]){e.preventDefault();const[x,y]=arrows[e.key];if(e.altKey)rotateOrbit(orbit,x*16,y*16);else api.movePet(x*(e.shiftKey?40:10),y*(e.shiftKey?40:10));return;}
+  if(['+','=','-','_'].includes(e.key)){e.preventDefault();zoomOrbit(orbit,['-','_'].includes(e.key)?100:-100);return;}
+  const keys={'1':'stand','2':'sit','3':'dance','4':'jump','5':'wave','6':'sleep',' ':'pet'};
+  if(!e.repeat&&keys[e.key]){e.preventDefault();api.action(keys[e.key]);}
+  if(e.key==='Enter')api.openPanel('play');if(e.key.toLowerCase()==='r')action('reset-view');if(e.key==='F1'){e.preventDefault();api.openHelp();}
+});
 const damp=(a,b,dt,speed=10)=>THREE.MathUtils.lerp(a,b,1-Math.exp(-dt*speed));
 const screenPoint=new THREE.Vector3();
 function updateDock(ms,dt){
@@ -111,7 +145,7 @@ function animate(ms){requestAnimationFrame(animate);if(ms-lastFrame<32)return;co
   stepOrbit(orbit,dt);const distance=orbit.distance*Math.max(1,config.scale*.93);
   camera.position.set(Math.sin(orbit.yaw)*Math.cos(orbit.pitch)*distance,Math.sin(orbit.pitch)*distance,Math.cos(orbit.yaw)*Math.cos(orbit.pitch)*distance).add(cameraTarget);camera.lookAt(cameraTarget);
   const tracking={...cursor,near:cursor.near&&!pointer&&Math.cos(orbit.yaw)>.2};
-  const p=stepMotion(motion,dt,pointer?{...config,autoMotion:false}:config,tracking);lastPose=p;
+  const p=pointer?.moved&&lastPose?lastPose:stepMotion(motion,dt,pointer?{...config,autoMotion:false}:config,tracking);lastPose=p;
   if(!motion.paused){const s=.88*config.scale;root.scale.x=damp(root.scale.x,s*(1+(1-p.scaleY)*.4),dt);root.scale.y=damp(root.scale.y,s*p.scaleY,dt);root.scale.z=damp(root.scale.z,s,dt);
     root.rotation.y=p.spin+(p.yaw||0);root.rotation.z=damp(root.rotation.z,p.sway,dt);
     if(ready)poseCharacter(models[config.skin],p,dt);
@@ -125,6 +159,7 @@ function animate(ms){requestAnimationFrame(animate);if(ms-lastFrame<32)return;co
   const status={mode:motion.mode,posture:motion.posture,expression:motion.expression,paused:motion.paused},statusKey=JSON.stringify(status);
   if(statusKey!==lastStatus){lastStatus=statusKey;api.reportPet(status);document.querySelector('#pet-state').textContent=motion.paused?'暂停中':motion.mode==='idle'?(motion.posture==='sit'?'坐着陪你':'站着陪你'):(ACTIONS[motion.mode]||motion.expression);document.querySelector('#sleepy').hidden=motion.mode!=='sleep';}
   renderer.render(scene,camera);updateDock(ms,dt);
+  window.inputDiagnostics={active:!!pointer,dragging,purpose:pointer?.purpose||null,moved:!!pointer?.moved};
   const b=models[config.skin]?.bone;
   window.petDiagnostics={ready,mode:motion.mode,posture:motion.posture,sleeping:motion.mode==='sleep',skin:config.skin,paused:motion.paused,expression:motion.expression,view:{yaw:orbit.yaw,pitch:orbit.pitch,distance:orbit.distance,perspective:camera.isPerspectiveCamera},gaze:[motion.gazeX,motion.gazeY],pose:lastPose,props:props.diagnostics(),interaction:{part:interaction.lastPart,action:interaction.lastAction},layout,dock:dockPosition,rig:b?{eyeL:b.eyeL.scale.y,eyeR:b.eyeR.scale.y,eyeYaw:b.eyeL.rotation.y,headYaw:b.head.rotation.y,hipsY:b.hips.position.y,legPitch:b.legL.rotation.x}:null,models:modelInfo,meshes:renderer.info.render.calls,triangles:renderer.info.render.triangles};
 }
