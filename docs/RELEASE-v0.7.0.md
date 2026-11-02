@@ -2,6 +2,12 @@
 
 这版支持给桌宠起自己的名字，重做网球拍和挥拍动作，并调整四边趴靠。原始白粉模型、默认尺寸、已有大小设置和左右键操作继续保留。
 
+## 实机截图与分享文案
+
+[下载 4 张简洁实机截图](https://github.com/MikeJack302/bay-chicken-desktop/releases/download/v0.7.0/BayChicken-Screenshots-v0.7.0.zip)：站立、打网球、坐凳子、趴在屏幕边缘。
+
+[查看对应文案](https://github.com/MikeJack302/bay-chicken-desktop/blob/main/docs/share/%E5%B0%8F%E7%BA%A2%E4%B9%A6%E6%96%87%E6%A1%88.md)：因为喜欢大湾鸡、即将去广州旅游，给自己做了一只可爱的小桌宠。
+
 ## 改名字
 
 点面板左上角的名字，或进入「设置」第一项，填写后保存。最多 16 个字，支持完整表情；留空恢复“湾湾”。底栏、面板、托盘和对话中的称呼同步更新，下次打开也会记住。改名不会改变已保存的大小。

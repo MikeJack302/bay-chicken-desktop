@@ -4,7 +4,9 @@ Windows 透明置顶三维桌宠。使用 Electron + Three.js，保留公开源�
 
 **[下载 Windows EXE](https://github.com/MikeJack302/bay-chicken-desktop/releases/latest)** · [小红书文案与配图](docs/share/小红书文案.md) · [来源与第三方说明](NOTICE.md)
 
-<p><img src="docs/share/01-cover.png" width="30%" alt="白粉两色三维大湾鸡"><img src="docs/share/03-find-a-stool.png" width="30%" alt="自己找小凳子坐下"><img src="docs/share/04-little-toys.png" width="30%" alt="糖葫芦、小球和风车互动"></p>
+<p><img src="docs/share/screenshots/01-stand.png" width="23%" alt="站立实机截图"><img src="docs/share/screenshots/02-tennis.png" width="23%" alt="打网球实机截图"><img src="docs/share/screenshots/03-sit.png" width="23%" alt="坐凳子实机截图"><img src="docs/share/screenshots/04-edge.png" width="23%" alt="趴在屏幕边缘实机截图"></p>
+
+[下载这 4 张实机截图](https://github.com/MikeJack302/bay-chicken-desktop/releases/download/v0.7.0/BayChicken-Screenshots-v0.7.0.zip) · [对应的小红书分享文案](docs/share/小红书文案.md)
 
 ## 直接使用
 
