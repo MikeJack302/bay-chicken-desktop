@@ -11,10 +11,11 @@ let panelSize={width:280,height:390};
 const shortcutStatus={toggle:false,panel:false};
 
 let pet, panel, tray, state = { settings: { ...DEFAULTS }, history: [], encryptedKey: '', position: null };
-let key = process.env.OPENAI_API_KEY || '', controller, dragTimer, cursorTimer, dragOrigin, writeQueue = Promise.resolve();
+let key = '', controller, dragTimer, cursorTimer, dragOrigin, writeQueue = Promise.resolve();
 let petStatus = { mode: 'idle', posture: 'stand', expression: '自然', paused: false };
 const smoke = process.argv.includes('--smoke');
 if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'bay-chicken-smoke-' + process.pid));
+else app.setPath('userData',path.join(app.getPath('appData'),'bay-chicken-trial'));
 const stateFile = () => path.join(app.getPath('userData'), 'companion.json');
 const send = (channel, value) => [pet, panel].forEach(w => { if (w && !w.isDestroyed()) w.webContents.send(channel, value); });
 const publicState = () => ({ version:app.getVersion(),shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings, history: state.history, hasKey: !!key, busy: !!controller, petStatus,
@@ -47,7 +48,7 @@ function openPanel(tab = 'play') { sizePanel(tab); panel.show(); panel.focus(); 
 function openHelp(){openPanel('play');panel.webContents.send('help:open');}
 function refreshIdentity(){
   const name=state.settings.nickname,label=name.replace(/&/g,'&&');
-  pet?.setTitle(`${name} · 大湾鸡`);panel?.setTitle(name);
+  pet?.setTitle(`${name} · 动作试验 · 大湾鸡`);panel?.setTitle(`${name} · 动作试验`);
   if(!tray)return;
   let tooltipName='';for(const s of new Intl.Segmenter('zh',{granularity:'grapheme'}).segment(name)){if((tooltipName+s.segment).length>100)break;tooltipName+=s.segment;}
   tray.setToolTip(`${tooltipName}${tooltipName===name?'':'…'} · 大湾鸡桌宠`);
@@ -105,7 +106,12 @@ async function boot() {
     if (state.encryptedKey && await safeStorage.isAsyncEncryptionAvailable()) {
       key = (await safeStorage.decryptStringAsync(Buffer.from(state.encryptedKey, 'base64'))).result;
     }
-  } catch (error) { if (error.code !== 'ENOENT') console.warn('Could not restore companion state:', error.message); }
+  } catch (error) {
+    if(error.code==='ENOENT'&&!smoke){
+      // First trial launch copies appearance only. Stable data is never written.
+      try{const old=JSON.parse(await fs.readFile(path.join(app.getPath('appData'),'bay-chicken','companion.json'),'utf8')).settings;state.settings=validateSettings({...DEFAULTS,scale:old.scale,skin:old.skin,nickname:old.nickname});}catch{}
+    }else if(error.code!=='ENOENT')console.warn('Could not restore companion state:',error.message);
+  }
   const area = screen.getPrimaryDisplay().workArea;
   const size = { width: 320, height: 400 };
   const p = state.position && Number.isFinite(state.position.x) && Number.isFinite(state.position.y) ? clampPosition(state.position, size.width, size.height) : { x: area.x + area.width - 390, y: area.y + area.height - 480 };
@@ -130,8 +136,8 @@ async function boot() {
   tray = new Tray(image);
   refreshIdentity();
   tray.on('double-click', () => { pet.show(); openPanel(); });
-  shortcutStatus.toggle=globalShortcut.register('F8', toggle);
-  shortcutStatus.panel=globalShortcut.register('CommandOrControl+Alt+B', () => { pet.show(); openPanel('play'); });
+  // Preview keeps the stable app global shortcuts untouched.
+
 }
 function trusted(event) { return [pet, panel].some(w => w && !w.isDestroyed() && w.webContents === event.sender); }
 const handle = (name, fn) => ipcMain.handle(name, (event, ...args) => { if (!trusted(event)) throw Error('Unknown window'); return fn(...args); });
@@ -210,7 +216,7 @@ on('pet:reload',()=>{endDrag();void pet.loadFile(path.join(__dirname,'../dist/pe
 on('releases:open',()=>{void shell.openExternal('https://github.com/MikeJack302/bay-chicken-desktop/releases/latest').catch(console.error);});
 on('pet:home',home);
 on('pet:move',point=>{if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return;endDrag({dock:false});if(edgeSide)setEdge(null);const[x,y]=pet.getPosition(),[w,h]=pet.getSize();const p=clampPosition({x:x+Math.max(-40,Math.min(40,point.x)),y:y+Math.max(-40,Math.min(40,point.y))},w,h);positionWindow(pet,p);state.position=p;placePanel();void persist().catch(console.error);});
-on('pet:action', name => {if(edgeSide&&['stand','sit','tennis','serve','victory','jump','bounce','dance','spin','stretch','walk','balance','bow'].includes(name))setEdge(null); if (['stand','sit','pet','tickle','dance','wave','sleep','idle','jump','stretch','spin','happy','curious','wink','look','pause','walk','nod','shake','bow','balance','peek','yawn','sigh','bounce','eat','ball','pinwheel','tennis','serve','victory','reset-view'].includes(name)) send('action', name); });
+on('pet:action', name => {if(edgeSide&&['stand','sit','tennis','serve','victory','lion','ballet','mushroom','jump','bounce','dance','spin','stretch','walk','balance','bow'].includes(name))setEdge(null); if (['stand','sit','pet','tickle','dance','wave','sleep','idle','jump','stretch','spin','happy','curious','wink','look','pause','walk','nod','shake','bow','balance','peek','yawn','sigh','bounce','eat','ball','pinwheel','tennis','serve','victory','lion','ballet','mushroom','reset-view'].includes(name)) send('action', name); });
 ipcMain.on('pet:status', (event, value) => {
   if (!pet || event.sender !== pet.webContents || !value || typeof value.mode !== 'string') return;
   petStatus = { edge:edgeSide,mode: value.mode.slice(0,24), posture: value.posture === 'sit' ? 'sit' : 'stand', expression: String(value.expression || '').slice(0,24), paused: !!value.paused };

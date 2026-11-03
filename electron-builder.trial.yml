@@ -1,0 +1,13 @@
+extends: ./electron-builder.yml
+appId: cn.baychicken.desktop.trial
+productName: 湾湾动作试验版
+executableName: BayChickenTrial
+directories:
+  output: release/trial
+portable:
+  artifactName: BayChickenTrial-${version}-x64.exe
+  requestExecutionLevel: user
+win:
+  target:
+    - target: portable
+      arch: x64

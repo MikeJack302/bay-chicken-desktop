@@ -65,10 +65,13 @@ export function footHeight(character){character.group.updateMatrixWorld(true);le
 export function poseCharacter(character,p,dt) {
   const {bone:b}=character,alpha=1-Math.exp(-dt*15);
   function rot(id,x=0,y=0,z=0) { const r=b[id].rotation;r.x=THREE.MathUtils.lerp(r.x,x,alpha);r.y=THREE.MathUtils.lerp(r.y,y,alpha);r.z=THREE.MathUtils.lerp(r.z,z,alpha); }
-  b.hips.position.y=THREE.MathUtils.lerp(b.hips.position.y,.5-p.sit*.30,alpha);
+  b.hips.position.y=THREE.MathUtils.lerp(b.hips.position.y,.5-p.sit*.30-(p.hipsDrop||0),alpha);
   b.hips.position.z=THREE.MathUtils.lerp(b.hips.position.z,-p.sit*.12,alpha);
-  rot('hips',p.sit*.09);rot('torso',-p.sit*.08+p.breath+(p.torsoX||0),0,p.sway*.12);
+  b.torso.position.y=THREE.MathUtils.lerp(b.torso.position.y,.5-(p.torsoDrop||0),alpha);
+  b.legL.position.x=THREE.MathUtils.lerp(b.legL.position.x,-.36-(p.legSpread||0),alpha);b.legR.position.x=THREE.MathUtils.lerp(b.legR.position.x,.36+(p.legSpread||0),alpha);
+  b.legL.position.y=THREE.MathUtils.lerp(b.legL.position.y,-.12+(p.legLiftL||0),alpha);b.legR.position.y=THREE.MathUtils.lerp(b.legR.position.y,-.12+(p.legLiftR||0),alpha);
+  rot('hips',p.sit*.09+(p.hipPitch||0));rot('torso',-p.sit*.08+p.breath+(p.torsoX||0),0,p.sway*.12);
   rot('head',p.headX,p.headY,p.headZ);rot('armL',p.armLX,p.armLY||0,p.armL);rot('armR',p.armRX,p.armRY||0,p.armR);
-  rot('legL',-p.sit*1.22+p.legL,p.sit*-.15,-p.sit*.12);rot('legR',-p.sit*1.22+p.legR,p.sit*.15,p.sit*.12);rot('tail',0,p.tail,0);
+  rot('legL',-p.sit*1.22+p.legL,p.sit*-.15+(p.legYawL||0),-p.sit*.12+(p.legRollL||0));rot('legR',-p.sit*1.22+p.legR,p.sit*.15+(p.legYawR||0),p.sit*.12+(p.legRollR||0));rot('tail',0,p.tail,0);
   for(const side of ['L','R']) { const eye=b['eye'+side];rot('eye'+side,-p.gazeY*.20,p.gazeX*.26,0);eye.scale.y=THREE.MathUtils.lerp(eye.scale.y,Math.max(.025,p['eye'+side]),1-Math.exp(-dt*32));eye.scale.x=THREE.MathUtils.lerp(eye.scale.x,p.wide,alpha); }
 }

@@ -1,7 +1,8 @@
 import {tennisSample} from './tennis.mjs';
 import {perchPose} from './perch.mjs';
-export const ACTIONS=Object.freeze({stand:'站立',sit:'找凳子坐',wave:'招手',jump:'跳跃',dance:'跳舞',stretch:'伸懒腰',spin:'转圈',pet:'摸头',tickle:'挠痒痒',sleep:'打瞌睡',happy:'开心',curious:'好奇',wink:'眨眼',look:'张望',walk:'踏步',nod:'点头',shake:'摇头',bow:'鞠躬',balance:'金鸡独立',peek:'探头',yawn:'打哈欠',sigh:'放松',bounce:'连跳',eat:'吃糖葫芦',ball:'玩小球',pinwheel:'吹风车',sitDown:'找凳子坐',standUp:'起身',tennis:'网球对打',serve:'抛球发球',victory:'网球庆祝'});
-const durations={tennis:8.2,serve:6.7,victory:4.3,wave:3.6,jump:2.1,dance:9,stretch:5.2,spin:3.5,pet:3,tickle:3,happy:3.2,curious:4.1,wink:1.6,look:5,walk:5.5,nod:2.8,shake:3,bow:3.6,balance:4.5,peek:4.2,yawn:4.6,sigh:3.5,bounce:3.7,eat:6.8,ball:6.5,pinwheel:6,sitDown:4.5,standUp:2.6,talk:5,think:90};
+import {signaturePose,SIGNATURE_DURATIONS} from './signature-moves.mjs';
+export const ACTIONS=Object.freeze({stand:'站立',sit:'找凳子坐',wave:'招手',jump:'跳跃',dance:'跳舞',stretch:'伸懒腰',spin:'转圈',pet:'摸头',tickle:'挠痒痒',sleep:'打瞌睡',happy:'开心',curious:'好奇',wink:'眨眼',look:'张望',walk:'踏步',nod:'点头',shake:'摇头',bow:'鞠躬',balance:'金鸡独立',peek:'探头',yawn:'打哈欠',sigh:'放松',bounce:'连跳',eat:'吃糖葫芦',ball:'玩小球',pinwheel:'吹风车',sitDown:'找凳子坐',standUp:'起身',tennis:'网球对打',serve:'抛球发球',victory:'网球庆祝',lion:'小飞狮步·试作',ballet:'Oi招呼·待对照',mushroom:'劈腿蹲·试作'});
+const durations={...SIGNATURE_DURATIONS,tennis:8.2,serve:6.7,victory:4.3,wave:3.6,jump:2.1,dance:9,stretch:5.2,spin:3.5,pet:3,tickle:3,happy:3.2,curious:4.1,wink:1.6,look:5,walk:5.5,nod:2.8,shake:3,bow:3.6,balance:4.5,peek:4.2,yawn:4.6,sigh:3.5,bounce:3.7,eat:6.8,ball:6.5,pinwheel:6,sitDown:4.5,standUp:2.6,talk:5,think:90};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*t*(t*(t*6-15)+10);};
 const mix=(a,b,t)=>a+(b-a)*t;
@@ -14,7 +15,7 @@ function start(m,name,automatic=false){
   else if(name==='stand'){m.posture='stand';m.chair=false;m.mode=wasSeated?'standUp':'idle';}
   else if(name==='sleep'&&m.edgeSide){m.mode=m.mode==='sleep'?'idle':'sleep';m.posture='stand';m.chair=false;}
   else if(name==='sleep'){if(m.mode==='sleep')m.mode='idle';else{m.posture='sit';m.chair=true;m.mode=wasSeated?'sleep':'sitDown';if(!wasSeated)m.afterSeat='sleep';}}
-  else {m.mode=name;if(['jump','bounce','dance','spin','stretch','walk','balance','bow','tennis','serve','victory'].includes(name)){m.posture='stand';m.chair=false;}}
+  else {m.mode=name;if(['jump','bounce','dance','spin','stretch','walk','balance','bow','tennis','serve','victory','lion','ballet','mushroom'].includes(name)){m.posture='stand';m.chair=false;}}
   if(!automatic){m.lastInteraction=m.clock;m.nextAuto=m.clock+9+m.random()*8;}
   m.variant=m.random();
 }
@@ -25,7 +26,7 @@ export function trigger(m,name){
   if(name==='idle'){if(['talk','think'].includes(m.mode))start(m,'rest',true);return;}
   if(!ACTIONS[name]&&!['think','talk'].includes(name))return;
   if(m.mode==='spin'&&m.output)m.turnBase=Math.round(m.output.spin/(Math.PI*2))*Math.PI*2;
-  if(['stand','sit','tennis','serve','victory','jump','bounce','dance','spin','stretch','walk','balance','bow'].includes(name))m.edgeSide=null;
+  if(['stand','sit','tennis','serve','victory','lion','ballet','mushroom','jump','bounce','dance','spin','stretch','walk','balance','bow'].includes(name))m.edgeSide=null;
   start(m,name);
 }
 function blink(now,at){const t=now-at;return smooth(0,.065,t)*(1-smooth(.065,.23,t));}
@@ -58,6 +59,7 @@ export function stepMotion(m,dt,settings={},cursor={x:0,y:0,near:false}){
     headX:-m.headLookY*.12,headY:m.headLookX*.19,headZ:Math.sin(now*.67+phase)*.014,
     armL:-.025+Math.sin(now*1.32+phase)*.022,armR:.025+Math.sin(now*1.17+phase+1)*.022,armLX:0,armRX:0,armRY:0,armLY:0,
     legL:Math.sin(now*.71+phase)*.016,legR:-Math.sin(now*.71+phase)*.016,tail:Math.sin(now*1.55+phase+.7)*.065+Math.sin(now*2.3)*.02,
+    hipsDrop:0,torsoDrop:0,legRollL:0,legRollR:0,legYawL:0,legYawR:0,legSpread:0,hipPitch:0,legLiftL:0,legLiftR:0,
     gazeX:m.gazeX,gazeY:m.gazeY,eyeL:(1-bl)*(happy?.38:sleep?.035:1),eyeR:(1-br)*(happy?.38:sleep?.035:1),wide:m.mode==='curious'?1.07:1,
     expression:sleep?'困困':happy?'开心':focus?'看着你':'自然'};
   if(sitting){p.armL=-.1;p.armR=.1;p.headX+=.025;}
@@ -126,6 +128,7 @@ export function stepMotion(m,dt,settings={},cursor={x:0,y:0,near:false}){
   if(sleep){p.headX=.15+Math.sin(now*.8)*.035;p.headZ=.06;p.gazeX=p.gazeY=0;p.tail=0;p.sway=Math.sin(now*.6)*.01;}
   if(m.mode==='talk'){p.headX+=Math.sin(t*3.7)*.025*e;p.armR+=.15*e;p.expression='回应你';}
   if(m.mode==='think'){p.headZ+=Math.sin(t*.9)*.04;p.expression='想一想';}
+  const signature=signaturePose(m.mode,t,s);if(signature){for(const[key,value]of Object.entries(signature)){if(typeof value==='number')p[key]=(p[key]||0)+value;else p[key]=value;}}
   if(m.edgeSide){
     const edge=perchPose(m.edgeSide,m.edgeElapsed,now,phase);
     p.edgeAmount=1;p.edgeRoll=edge.edgeRoll;p.chair=0;p.seatLift=0;p.sit=0;p.x=0;p.z=0;p.y=edge.y;p.sway=0;p.torsoX=edge.torsoX;

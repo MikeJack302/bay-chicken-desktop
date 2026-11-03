@@ -115,7 +115,7 @@ $('#release-link').onclick=()=>api.openReleases();
 api.on('help:open',showHelp);
 function renderPet(p) {
   if (!p) return;
-  const labels={wave:'招手',dance:'跳舞',jump:'开心蹦蹦',stretch:'伸懒腰',spin:'转圈',pet:'享受摸头',tickle:'被挠痒痒',sleep:'打瞌睡',curious:'歪头想事情',wink:'给你眨眼',look:'左顾右盼',happy:'开心眯眼',sitDown:'找凳子坐',standUp:'从凳子起身',eat:'吃糖葫芦',ball:'玩小球',pinwheel:'吹风车',tennis:'网球对打',serve:'抛球发球',victory:'好球庆祝'};
+  const labels={lion:'跳小狮步',ballet:'Oi 招呼（试作）',mushroom:'劈腿蹲',wave:'招手',dance:'跳舞',jump:'开心蹦蹦',stretch:'伸懒腰',spin:'转圈',pet:'享受摸头',tickle:'被挠痒痒',sleep:'打瞌睡',curious:'歪头想事情',wink:'给你眨眼',look:'左顾右盼',happy:'开心眯眼',sitDown:'找凳子坐',standUp:'从凳子起身',eat:'吃糖葫芦',ball:'玩小球',pinwheel:'吹风车',tennis:'网球对打',serve:'抛球发球',victory:'好球庆祝'};
   $('#presence-text').textContent = p.paused ? `${name()}在这里，静静陪你` : `${name()}正在${labels[p.mode] || (p.edge?'趴边陪你':p.posture === 'sit' ? '坐着陪你' : '站着陪你')}`;
   $('#expression-text').textContent = p.expression;
   document.querySelectorAll('#play-view [data-action]').forEach(b => { const active=b.dataset.action === (p.mode === 'idle' ? p.posture : p.mode); b.classList.toggle('selected',active); b.setAttribute('aria-pressed',String(active)); });
