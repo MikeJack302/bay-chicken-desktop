@@ -15,7 +15,7 @@ let key = '', controller, dragTimer, cursorTimer, dragOrigin, writeQueue = Promi
 let petStatus = { mode: 'idle', posture: 'stand', expression: '自然', paused: false };
 const smoke = process.argv.includes('--smoke');
 if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'bay-chicken-smoke-' + process.pid));
-else app.setPath('userData',path.join(app.getPath('appData'),'bay-chicken-trial-2'));
+else app.setPath('userData',path.join(app.getPath('appData'),'bay-chicken-trial-3'));
 const stateFile = () => path.join(app.getPath('userData'), 'companion.json');
 const send = (channel, value) => [pet, panel].forEach(w => { if (w && !w.isDestroyed()) w.webContents.send(channel, value); });
 const publicState = () => ({ version:app.getVersion(),shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings, history: state.history, hasKey: !!key, busy: !!controller, petStatus,
@@ -48,7 +48,7 @@ function openPanel(tab = 'play') { sizePanel(tab); panel.show(); panel.focus(); 
 function openHelp(){openPanel('play');panel.webContents.send('help:open');}
 function refreshIdentity(){
   const name=state.settings.nickname,label=name.replace(/&/g,'&&');
-  pet?.setTitle(`${name} · 动作试验2 · 大湾鸡`);panel?.setTitle(`${name} · 动作试验2`);
+  pet?.setTitle(`${name} · 动作试验3 · 大湾鸡`);panel?.setTitle(`${name} · 动作试验3`);
   if(!tray)return;
   let tooltipName='';for(const s of new Intl.Segmenter('zh',{granularity:'grapheme'}).segment(name)){if((tooltipName+s.segment).length>100)break;tooltipName+=s.segment;}
   tray.setToolTip(`${tooltipName}${tooltipName===name?'':'…'} · 大湾鸡桌宠`);

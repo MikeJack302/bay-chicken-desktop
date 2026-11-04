@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import {LEG_REST,solveLeg} from './leg-ik.mjs';
+import {createRoundLegs} from './round-legs.mjs';
+import {createFaceRig} from './face-rig.mjs';
 
 const smooth = (a,b,x) => { const t=THREE.MathUtils.clamp((x-a)/(b-a),0,1);return t*t*(3-2*t); };
 function smoothNormals(geometry) {
@@ -23,9 +26,10 @@ export async function loadCharacter(bytes,name) {
   const ids={};
   ids.base=add('base',null,[0,0,0]);ids.hips=add('hips','base',[0,.5,0]);ids.torso=add('torso','hips',[0,.5,0]);
   ids.head=add('head','torso',[0,.45,0]);ids.armL=add('armL','torso',[-.60,.04,0]);ids.armR=add('armR','torso',[.60,.04,0]);
-  ids.legL=add('legL','hips',[-.36,-.12,.03]);ids.legR=add('legR','hips',[.36,-.12,.03]);ids.tail=add('tail','hips',[0,-.08,-.5]);
+  ids.legL=add('legL','hips',[-.36,.02,.01]);ids.legR=add('legR','hips',[.36,.02,.01]);ids.tail=add('tail','hips',[0,-.08,-.5]);
   ids.eyeL=add('eyeL','head',[-.60,.451,.62]);ids.eyeR=add('eyeR','head',[.626,.451,.60]);
-  ids.footL=add('footL','legL',[0,-.24,.08]);ids.footR=add('footR','legR',[0,-.24,.08]);
+  ids.kneeL=add('kneeL','legL',LEG_REST.knee);ids.kneeR=add('kneeR','legR',LEG_REST.knee);
+  ids.footL=add('footL','kneeL',LEG_REST.ankle);ids.footR=add('footR','kneeR',LEG_REST.ankle);
   const skeleton=new THREE.Skeleton(bones);group.updateMatrixWorld(true);skeleton.calculateInverses();
   const meshes=[],feet=[],screenSamples=[];let eyeMeshCount=0;
   gltf.scene.traverse(object=>{
@@ -44,10 +48,11 @@ export async function loadCharacter(bytes,name) {
         const head=smooth(1.13,1.52,y),arm=smooth(.57,.88,Math.abs(x))*(1-smooth(.96,1.14,y))*smooth(.42,.60,y);
         const tail=(1-smooth(-.95,-.58,z))*(1-smooth(.8,1.25,y));
         // Keep the lower belly on the pelvis; leg abduction must not pull it into a flap.
-        const leg=(1-smooth(.20,.43,y))*(1-tail);
+        const leg=0; // The short legs use continuous rounded geometry below the original pelvis.
         const remaining=Math.max(0,1-head-arm-tail-leg),torso=smooth(.4,.9,y);
         const foot=1-smooth(.10,.26,y);
-        weights=[[ids.head,head],[ids['arm'+side],arm],[ids.tail,tail],[ids['leg'+side],leg*(1-foot)],[ids['foot'+side],leg*foot],[ids.torso,remaining*torso],[ids.hips,remaining*(1-torso)]].filter(w=>w[1]>.0001).sort((a,b)=>b[1]-a[1]).slice(0,4);
+        const thigh=smooth(.24,.39,y);
+        weights=[[ids.head,head],[ids['arm'+side],arm],[ids.tail,tail],[ids['leg'+side],leg*(1-foot)*thigh],[ids['knee'+side],leg*(1-foot)*(1-thigh)],[ids['foot'+side],leg*foot],[ids.torso,remaining*torso],[ids.hips,remaining*(1-torso)]].filter(w=>w[1]>.0001).sort((a,b)=>b[1]-a[1]).slice(0,4);
       }
       const total=weights.reduce((sum,w)=>sum+w[1],0);
       weights.forEach(([index,weight],j)=>{skinIndices[i*4+j]=index;skinWeights[i*4+j]=weight/total;});
@@ -56,11 +61,13 @@ export async function loadCharacter(bytes,name) {
     const material=object.material.clone();material.metalness=.025;material.roughness=.57;material.side=THREE.FrontSide;
     const mesh=new THREE.SkinnedMesh(geometry,material);mesh.name=object.name;mesh.frustumCulled=false;group.add(mesh);mesh.bind(skeleton,new THREE.Matrix4());meshes.push(mesh);
     mesh.userData.bodyPart=eyes?'eyes':box.min.y>2.55?'crown':box.max.z<-.2&&box.min.y>1.5?'back':'body';
-    for(let i=0;i<positions.count;i+=3)if(positions.getY(i)<.18)feet.push({mesh,index:i});
-    for(let i=0;i<positions.count;i+=3)screenSamples.push({mesh,index:i});
+    for(let i=0;i<positions.count;i+=3)if(positions.getY(i)>=.35)screenSamples.push({mesh,index:i});
   });
+  const body=meshes.find(m=>m.geometry.boundingBox?.min.y<.1)||meshes.find(m=>new THREE.Box3().setFromBufferAttribute(m.geometry.attributes.position).min.y<.1);
+  const legs=createRoundLegs(group,bone,body);meshes.push(...legs.meshes);feet.push(...legs.samples);screenSamples.push(...legs.samples);
+  const face=createFaceRig(bone,meshes.find(m=>m.userData.bodyPart==='eyes'),body,name);
   group.visible=false;
-  return {group,bone,meshes,feet,screenSamples,info:{source:'published-source-glb',meshes:meshes.length,texturedMeshes:meshes.filter(m=>m.material.map).length,bones:bones.length,eyeMeshes:eyeMeshCount,normalizedHeight:3.28,skin:name}};
+  return {group,bone,meshes,feet,screenSamples,legs,face,info:{source:'published-source-glb',legs:'rounded-continuous-mesh',meshes:meshes.length,texturedMeshes:meshes.filter(m=>m.material.map).length,bones:bones.length,eyeMeshes:eyeMeshCount,normalizedHeight:3.28,skin:name}};
 }
 const footPoint=new THREE.Vector3();
 export function footHeight(character){character.group.updateMatrixWorld(true);let low=Infinity;for(const {mesh,index}of character.feet){mesh.getVertexPosition(index,footPoint);low=Math.min(low,footPoint.y);}return Number.isFinite(low)?low:0;}
@@ -69,27 +76,33 @@ export function poseCharacter(character,p,dt) {
   const {bone:b}=character,alpha=1-Math.exp(-dt*15);
   function rot(id,x=0,y=0,z=0) { const r=b[id].rotation;r.x=THREE.MathUtils.lerp(r.x,x,alpha);r.y=THREE.MathUtils.lerp(r.y,y,alpha);r.z=THREE.MathUtils.lerp(r.z,z,alpha); }
   b.hips.position.y=THREE.MathUtils.lerp(b.hips.position.y,.5-p.sit*.30-(p.hipsDrop||0),alpha);
-  b.hips.position.z=THREE.MathUtils.lerp(b.hips.position.z,-p.sit*.12,alpha);
+  b.hips.position.x=THREE.MathUtils.lerp(b.hips.position.x,p.hipsX||0,alpha);b.hips.position.z=THREE.MathUtils.lerp(b.hips.position.z,-p.sit*.12+(p.hipsZ||0),alpha);
   b.torso.position.y=THREE.MathUtils.lerp(b.torso.position.y,.5-(p.torsoDrop||0),alpha);
   b.armL.position.z=THREE.MathUtils.lerp(b.armL.position.z,p.armForward||0,alpha);b.armR.position.z=THREE.MathUtils.lerp(b.armR.position.z,p.armForward||0,alpha);
   b.legL.position.x=THREE.MathUtils.lerp(b.legL.position.x,-.36-(p.legSpread||0),alpha);b.legR.position.x=THREE.MathUtils.lerp(b.legR.position.x,.36+(p.legSpread||0),alpha);
-  b.legL.position.y=THREE.MathUtils.lerp(b.legL.position.y,-.12+(p.legLiftL||0),alpha);b.legR.position.y=THREE.MathUtils.lerp(b.legR.position.y,-.12+(p.legLiftR||0),alpha);
+  b.legL.position.y=THREE.MathUtils.lerp(b.legL.position.y,.02+(p.legLiftL||0),alpha);b.legR.position.y=THREE.MathUtils.lerp(b.legR.position.y,.02+(p.legLiftR||0),alpha);
   rot('hips',p.sit*.09+(p.hipPitch||0));rot('torso',-p.sit*.08+p.breath+(p.torsoX||0),p.torsoYaw||0,p.sway*.12);
   rot('head',p.headX,p.headY,p.headZ);rot('armL',p.armLX,p.armLY||0,p.armL);rot('armR',p.armRX,p.armRY||0,p.armR);
   rot('legL',-p.sit*1.22+p.legL,p.sit*-.15+(p.legYawL||0),-p.sit*.12+(p.legRollL||0));rot('legR',-p.sit*1.22+p.legR,p.sit*.15+(p.legYawR||0),p.sit*.12+(p.legRollR||0));rot('tail',0,p.tail,0);
-  for(const side of['L','R']){
-    footRotation.setFromEuler(footEuler.set(p['footPitch'+side]||0,p['footYaw'+side]||0,0));
-    footParent.multiplyQuaternions(b.hips.quaternion,b['leg'+side].quaternion).invert();footRotation.premultiply(footParent);
-    footIdentity.identity().slerp(footRotation,p.footControl||0);b['foot'+side].quaternion.slerp(footIdentity,alpha);
-  }
+  rot('kneeL',p.kneeL||0);rot('kneeR',p.kneeR||0);
   if(p.footPlant>.001){
-    character.group.updateWorldMatrix(true,true);
+    character.group.updateWorldMatrix(true,true);const inverse=new THREE.Matrix4().copy(character.group.matrixWorld).invert();
     for(const side of['L','R']){
-      const current=b['foot'+side].getWorldPosition(footCurrent),target=character.group.localToWorld(footTarget.set((side==='L'?-.36:.36)+(p['foot'+side+'X']||0),.14+(p['footLift'+side]||0),.11+(p['foot'+side+'Z']||0)));
-      b.hips.worldToLocal(current);b.hips.worldToLocal(target);b['leg'+side].position.addScaledVector(target.sub(current),p.footPlant);
+      const hip=b['leg'+side].getWorldPosition(new THREE.Vector3()).applyMatrix4(inverse),goal=new THREE.Vector3((side==='L'?-.36:.36)+(p['foot'+side+'X']||0),.14+(p['footLift'+side]||0),.11+(p['foot'+side+'Z']||0));
+      const solved=solveLeg(hip,goal),parent=b.hips.quaternion;
+      const upper=solved.knee.clone().sub(hip).applyQuaternion(parent.clone().invert()).normalize(),legQ=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(...LEG_REST.knee).normalize(),upper);
+      b['leg'+side].quaternion.slerp(legQ,p.footPlant);
+      const lower=solved.ankle.clone().sub(solved.knee).applyQuaternion(parent.clone().multiply(b['leg'+side].quaternion).invert()).normalize(),kneeQ=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(...LEG_REST.ankle).normalize(),lower);
+      b['knee'+side].quaternion.slerp(kneeQ,p.footPlant);
     }
   }
+  for(const side of['L','R']){
+    footRotation.setFromEuler(footEuler.set(p['footPitch'+side]||0,p['footYaw'+side]||0,0));
+    footParent.multiplyQuaternions(b.hips.quaternion,b['leg'+side].quaternion).multiply(b['knee'+side].quaternion).invert();footRotation.premultiply(footParent);
+    footIdentity.identity().slerp(footRotation,p.footControl||0);b['foot'+side].quaternion.slerp(footIdentity,alpha);
+  }
   for(const side of ['L','R']) { const eye=b['eye'+side];rot('eye'+side,-p.gazeY*.20,p.gazeX*.26,0);eye.scale.y=THREE.MathUtils.lerp(eye.scale.y,Math.max(.025,p['eye'+side]),1-Math.exp(-dt*32));eye.scale.x=THREE.MathUtils.lerp(eye.scale.x,p.wide,alpha); }
+  character.legs.update();
+  character.face.update(p,dt);
 }
-const footCurrent=new THREE.Vector3(),footTarget=new THREE.Vector3();
 const footRotation=new THREE.Quaternion(),footParent=new THREE.Quaternion(),footIdentity=new THREE.Quaternion(),footEuler=new THREE.Euler();

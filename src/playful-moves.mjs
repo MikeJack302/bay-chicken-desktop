@@ -7,6 +7,7 @@ export function barbellPose(t){
   const e=gate(.05,.65,9.1,9.8,t),lift=gate(2.0,3.8,6.4,7.8,t),hold=gate(3.9,4.2,6.0,6.45,t);
   const rightStep=ease(.55,1.35,t)*(1-ease(7.95,8.65,t)),leftStep=ease(1.3,1.9,t)*(1-ease(8.6,9.2,t));
   const lunge=gate(1.65,2.35,6.55,7.75,t);
+  const settle=gate(.50,1.35,8.0,8.9,t);
   const stepLift=(a,b)=>Math.sin(Math.PI*ease(a,b,t));
   const rightLift=.13*(stepLift(.55,1.35)+stepLift(7.95,8.65)),leftLift=.085*(stepLift(1.3,1.9)+stepLift(8.6,9.2));
   const dy=-.43+.70*lift+Math.sin(t*25)*.005*hold;
@@ -16,11 +17,11 @@ export function barbellPose(t){
   const yaw=Math.atan2(c,afterZ)-Math.acos(clamp(BARBELL_GRIP.halfWidth/Math.hypot(afterZ,c),-1,1));
   return{barbell:e,armL:-angle*e,armR:angle*e,armLX:0,armRX:0,armLY:-yaw*e,armRY:yaw*e,armForward:(.24+.12*lift)*e,
     headX:(.035+.045*lift)*e,headZ:Math.sin(t*3.5)*.022*hold,headY:.025*hold,
-    torsoYaw:-.15*lift*e,torsoX:Math.sin(t*19)*.003*hold,hipsDrop:.095*lunge,hipPitch:.035*lunge,
+    torsoYaw:-.12*lift*e,torsoX:Math.sin(t*19)*.003*hold,hipsDrop:.09*settle,hipsX:.13*settle,hipsZ:.16*settle,hipPitch:.025*lunge,
     legL:.24*lunge,legR:-.44*lunge,legRollL:-.10*lunge,legRollR:.26*lunge,footControl:e,footPlant:e,
-    footLX:-.08*leftStep,footLZ:-.12*leftStep,footRX:.40*rightStep,footRZ:.30*rightStep,footLiftL:leftLift,footLiftR:rightLift,
+    footLX:-.06*leftStep,footLZ:-.14*leftStep,footRX:.20*rightStep,footRZ:.22*rightStep,footLiftL:leftLift,footLiftR:rightLift,
     footPitchL:.06*leftLift/.085,footPitchR:.09*rightLift/.13,footYawL:-.10*leftStep,footYawR:.20*rightStep,
-    eyeL:-.30*hold,eyeR:-.30*hold,gazeY:-.15*lift,
+    gazeY:-.15*lift,
     expression:t<1.9?'迈开弓步，先站稳':t<3.9?'用力往上举':t<6.4?'顶住…顶唔顺啦':t<7.8?'慢慢放下来':t<9.2?'收脚站稳':'放稳啦'};
 }
 
@@ -37,6 +38,7 @@ export function springPose(t,intensity=1){
   }
   return{y:air*e*s,legL:(-.20*prepare+.22*tuck-.16*land)*e,legR:(-.20*prepare+.22*tuck-.16*land)*e,
     hipsDrop:(.055*prepare+.045*land)*e,footControl:e,footPlant:(1-clamp(free))*e,footPitchL:(.18*push+.13*tuck-.065*heel)*e,footPitchR:(.18*push+.13*tuck-.065*heel)*e,
+    kneeL:.32*tuck*e,kneeR:.32*tuck*e,
     armL:(-.10-.40*tuck-.08*land)*e,armR:(.10+.40*tuck+.08*land)*e,armLX:-.04*tuck*e,armRX:-.04*tuck*e,
     headX:(.05*prepare-.035*tuck+.075*land)*e,headZ:Math.sin(t*2.4)*.018*tuck*e,
     torsoX:(.035*prepare+.035*land)*e,wide:.025*tuck*e,

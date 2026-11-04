@@ -1,6 +1,7 @@
 import {tennisSample} from './tennis.mjs';
 import {perchPose} from './perch.mjs';
 import {signaturePose,SIGNATURE_DURATIONS} from './signature-moves.mjs';
+import {applyExpression} from './expressions.mjs';
 export const ACTIONS=Object.freeze({stand:'站立',sit:'找凳子坐',wave:'招手',jump:'跳跃',dance:'跳舞',stretch:'伸懒腰',spin:'转圈',pet:'摸头',tickle:'挠痒痒',sleep:'打瞌睡',happy:'开心',curious:'好奇',wink:'眨眼',look:'张望',walk:'踏步',nod:'点头',shake:'摇头',bow:'鞠躬',balance:'金鸡独立',peek:'探头',yawn:'打哈欠',sigh:'放松',bounce:'连跳',eat:'吃糖葫芦',ball:'玩小球',pinwheel:'吹风车',sitDown:'找凳子坐',standUp:'起身',tennis:'网球对打',serve:'抛球发球',victory:'网球庆祝',lion:'小飞狮步·试作',ballet:'Oi招呼·待对照',mushroom:'劈腿蹲·试作',barbell:'举杠铃·试作',spring:'弹簧连跳·试作'});
 const durations={...SIGNATURE_DURATIONS,tennis:8.2,serve:6.7,victory:4.3,wave:3.6,jump:2.1,dance:9,stretch:5.2,spin:3.5,pet:3,tickle:3,happy:3.2,curious:4.1,wink:1.6,look:5,walk:5.5,nod:2.8,shake:3,bow:3.6,balance:4.5,peek:4.2,yawn:4.6,sigh:3.5,bounce:3.7,eat:6.8,ball:6.5,pinwheel:6,sitDown:4.5,standUp:2.6,talk:5,think:90};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -60,7 +61,7 @@ export function stepMotion(m,dt,settings={},cursor={x:0,y:0,near:false}){
     armL:-.025+Math.sin(now*1.32+phase)*.022,armR:.025+Math.sin(now*1.17+phase+1)*.022,armLX:0,armRX:0,armRY:0,armLY:0,
     legL:Math.sin(now*.71+phase)*.016,legR:-Math.sin(now*.71+phase)*.016,tail:Math.sin(now*1.55+phase+.7)*.065+Math.sin(now*2.3)*.02,
     hipsDrop:0,torsoDrop:0,legRollL:0,legRollR:0,legYawL:0,legYawR:0,legSpread:0,hipPitch:0,legLiftL:0,legLiftR:0,barbell:0,armForward:0,torsoYaw:0,footControl:0,footPlant:0,footPitchL:0,footPitchR:0,footYawL:0,footYawR:0,footLX:0,footLZ:0,footRX:0,footRZ:0,footLiftL:0,footLiftR:0,
-    gazeX:m.gazeX,gazeY:m.gazeY,eyeL:(1-bl)*(happy?.38:sleep?.035:1),eyeR:(1-br)*(happy?.38:sleep?.035:1),wide:m.mode==='curious'?1.07:1,
+    hipsX:0,hipsZ:0,kneeL:0,kneeR:0,closedL:0,closedR:0,mouthSmile:0,lidCurve:1,gazeX:m.gazeX,gazeY:m.gazeY,eyeL:(1-bl)*(happy?.38:sleep?.035:1),eyeR:(1-br)*(happy?.38:sleep?.035:1),wide:m.mode==='curious'?1.07:1,
     expression:sleep?'困困':happy?'开心':focus?'看着你':'自然'};
   if(sitting){p.armL=-.1;p.armR=.1;p.headX+=.025;}
   const duration=durations[m.mode]||100,e=smooth(0,.5,t)*(1-smooth(duration-.65,duration,t)),s=settings.motionIntensity||1;
@@ -137,6 +138,7 @@ export function stepMotion(m,dt,settings={},cursor={x:0,y:0,near:false}){
     p.legL=edge.legL;p.legR=edge.legR;p.tail+=Math.sin(now*1.35)*.045;
     if(m.mode==='idle')p.expression=edge.settle;
   }
+  applyExpression(p,m.mode,t,duration);
   if(m.from){const blend=smooth(0,m.blendDuration,m.blendTime);for(const key of Object.keys(p))if(typeof p[key]==='number'&&typeof m.from[key]==='number')p[key]=mix(m.from[key],p[key],blend);if(blend>=1)m.from=null;}
   p.eyeL=clamp(p.eyeL,0,1);p.eyeR=clamp(p.eyeR,0,1);m.expression=p.expression;m.output={...p};return p;
 }

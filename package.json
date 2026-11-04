@@ -1,6 +1,6 @@
 {
   "name": "bay-chicken-trial",
-  "version": "0.8.0-preview.2",
+  "version": "0.8.0-preview.3",
   "private": true,
   "description": "大湾鸡 · 3D Windows 桌面伙伴",
   "main": "electron/main.cjs",

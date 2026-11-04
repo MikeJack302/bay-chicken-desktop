@@ -21,4 +21,16 @@ test('both original models step into a lunge, plant their feet during the lift a
   }
  }
 });
+test('rebuilt legs are closed three-dimensional volumes with fixed thigh and shin lengths',async()=>{
+ const THREE=await import('three'),{loadCharacter,poseCharacter}=await import('../src/character.js'),{createMotion,trigger,stepMotion}=await import('../src/motion.mjs'),{UPPER_LENGTH,LOWER_LENGTH}=await import('../src/leg-ik.mjs');
+ const c=await loadCharacter(geometryOnlyGlb(require('node:path').join(__dirname,'../assets/models/pink.glb')),'pink'),m=createMotion(()=>.5);trigger(m,'barbell');
+ for(let i=0;i<490;i++){
+  const p=stepMotion(m,.02,{autoMotion:false});poseCharacter(c,p,.02);c.group.updateMatrixWorld(true);
+  for(const side of['L','R']){const hip=c.bone['leg'+side].getWorldPosition(new THREE.Vector3()),knee=c.bone['knee'+side].getWorldPosition(new THREE.Vector3()),ankle=c.bone['foot'+side].getWorldPosition(new THREE.Vector3());assert.ok(Math.abs(hip.distanceTo(knee)-UPPER_LENGTH)<1e-6);assert.ok(Math.abs(knee.distanceTo(ankle)-LOWER_LENGTH)<1e-6);}
+  if(i%50===0)for(const mesh of c.legs.meshes){const g=mesh.geometry,a=g.attributes.position,ix=g.index,edges=new Map();let volume=0;
+   for(let j=0;j<ix.count;j+=3){const ids=[ix.getX(j),ix.getX(j+1),ix.getX(j+2)],v=ids.map(i=>new THREE.Vector3().fromBufferAttribute(a,i));volume+=v[0].dot(new THREE.Vector3().crossVectors(v[1],v[2]))/6;for(let k=0;k<3;k++){const edge=[ids[k],ids[(k+1)%3]].sort((x,y)=>x-y).join(':');edges.set(edge,(edges.get(edge)||0)+1);}}
+   assert.ok(volume>.015,'the leg retains solid volume');assert.ok([...edges.values()].every(n=>n===2),'the surface has no open seams');for(const v of a.array)assert.ok(Number.isFinite(v));
+  }
+ }
+});
 module.exports={geometryOnlyGlb};

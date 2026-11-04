@@ -4,7 +4,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 (async()=>{
   const server=net.createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const port=server.address().port;await new Promise(resolve=>server.close(resolve));
   const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
-  const file=path.resolve('release/trial/BayChickenTrial-0.8.0-preview.2-x64.exe');
+  const file=path.resolve('release/trial/BayChickenTrial-0.8.0-preview.3-x64.exe');
   const child=spawn(file,['--smoke','--remote-debugging-address=127.0.0.1',`--remote-debugging-port=${port}`],{env,stdio:'ignore',windowsHide:true});
   let browser,pet;const errors=[];
   try{
@@ -23,8 +23,10 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await pet.evaluate(()=>bay.openPanel('play'));const panel=browser.contexts()[0].pages().find(p=>p.url().endsWith('panel.html'));assert.ok(panel);
     await panel.locator('#more-behaviors > summary').click();await panel.locator('[data-action="barbell"]').click();
     await pet.waitForFunction(()=>petDiagnostics.mode==='barbell'&&petDiagnostics.time>4.3);
-    const lifting=await pet.evaluate(()=>petDiagnostics);assert.ok(lifting.props.visible.includes('blue-barbell'));assert.ok(Math.abs(lifting.props.barGripSpan-1.8)<.02);assert.equal(lifting.pose.footRX,.4);assert.equal(lifting.pose.footRZ,.3);assert.equal(lifting.pose.footPlant,1);
+    const lifting=await pet.evaluate(()=>petDiagnostics);assert.ok(lifting.props.visible.includes('blue-barbell'));assert.ok(Math.abs(lifting.props.barGripSpan-1.8)<.02);assert.equal(lifting.pose.footRX,.2);assert.equal(lifting.pose.footRZ,.22);assert.equal(lifting.pose.footPlant,1);
+    assert.equal(lifting.models[lifting.skin].legs,'rounded-continuous-mesh');assert.equal(lifting.models[lifting.skin].bones,15);
     await panel.screenshot({path:'test-results/trial-panel.png'});await panel.evaluate(()=>bay.closePanel());
+    await pet.evaluate(()=>bay.action('dance'));await pet.waitForFunction(()=>petDiagnostics.mode==='dance'&&petDiagnostics.time>1.5);const joyful=await pet.evaluate(()=>petDiagnostics.face);assert.ok(joyful.left>.8&&joyful.right>.8);await pet.addStyleTag({content:'body.pet-page{background:#f7f7f5}'});await pet.screenshot({path:'test-results/packaged-expressions.png'});
     await pet.evaluate(()=>bay.action('tennis'));await pet.waitForTimeout(1500);assert.ok((await pet.evaluate(()=>petDiagnostics.props.visible)).includes('tennis-racket'));
     await pet.evaluate(()=>bay.dockEdge('bottom'));await pet.waitForTimeout(2200);assert.equal(await pet.evaluate(()=>inputDiagnostics.edge),'bottom');assert.ok(await pet.evaluate(()=>Math.abs(edgeAnchor.y-inputDiagnostics.visible.bottom)<5));
     await pet.screenshot({path:'test-results/portable-exe.png',omitBackground:true});assert.deepEqual(errors,[]);
