@@ -34,7 +34,11 @@ function fillSettings() {
   for (const id of ['voice', 'alwaysOnTop','edgeSnap']) $('#' + id).checked = s[id];
   $(`input[name=skin][value=${s.skin}]`).checked = true;
   $('#key-status').textContent = state.hasKey ? '已保存 · 留空保留' : '未设置';
+  for(const item of s.reminders.items){$('#reminder-'+item.id+'-enabled').checked=item.enabled;$('#reminder-'+item.id+'-minutes').value=item.minutes;if(item.id==='custom')$('#reminder-custom-text').value=item.text;}
+  $('#reminders-paused').checked=s.reminders.paused;
 }
+function renderReminders(){const s=state?.reminderStatus;if(!s)return;$('#reminder-status').textContent=s.paused?'提醒已暂停，恢复后重新计时。':s.next.length?s.next.map(j=>{const seconds=Math.max(0,Math.ceil((j.due-Date.now())/1000));return `${j.label} · ${seconds===0?'等待合适时机':seconds<60?seconds+'秒后':Math.ceil(seconds/60)+'分钟后'}`;}).join(' / '):'尚未开启提醒，可以先点「试播」看看。';}
+function reminderValues(){return{paused:$('#reminders-paused').checked,items:['water','move','eyes','custom'].map(id=>({id,enabled:$('#reminder-'+id+'-enabled').checked,minutes:Number($('#reminder-'+id+'-minutes').value),...(id==='custom'?{text:$('#reminder-custom-text').value}:{})}))};}
 function update(next) {
   state = next;
   document.title=name();
@@ -42,7 +46,7 @@ function update(next) {
   $('#hello-chip').textContent=`你好，${name()}`;$('#help-title').textContent=`陪${name()}玩`;
   $('#message-input').placeholder=`和${name()}说点什么…`;
   $('#app-version').textContent=`湾湾 v${state.version}`;
-  $('#shortcut-status').textContent=`${state.shortcuts?.toggle?'F8 显示 / 隐藏':'F8 被占用，请使用托盘'} · ${state.shortcuts?.panel?'Ctrl + Alt + B 打开面板':'面板快捷键被占用，可点「…」'}`;
+  $('#shortcut-status').textContent=state.version.includes('beta')?'Beta：使用托盘显示 / 隐藏桌宠，点「…」打开面板。':`${state.shortcuts?.toggle?'F8 显示 / 隐藏':'F8 被占用，请使用托盘'} · ${state.shortcuts?.panel?'Ctrl + Alt + B 打开面板':'面板快捷键被占用，可点「…」'}`;
   $('.connection').classList.toggle('online', state.connected);
   $('#connection-label').textContent = state.connected ? `AI 已配置 · ${state.settings.model}` : '离线陪伴 · 预设回应';
   $('#connect-link').textContent = state.connected ? '连接设置 ↗' : '连接 AI ↗';
@@ -51,6 +55,7 @@ function update(next) {
   $('#quick-auto').checked = state.settings.autoMotion;
   $('#quick-eyes').checked = state.settings.eyeTracking;
   renderPet(state.petStatus);
+  renderReminders();
   renderHistory();
 }
 function setBusy(value) {
@@ -99,7 +104,7 @@ $('#settings-form').onsubmit = async e => {
     const result = await api.saveSettings({ ...state.settings, provider: $('#provider').value, endpoint: $('#endpoint').value, model: $('#model').value,
       nickname:$('#nickname').value,apiKey: $('#apiKey').value, clearKey: $('#clearKey').checked, scale: sizeChanged?Number($('#scale').value):state.settings.scale,
       skin: $('input[name=skin]:checked').value, edgeSnap:$('#edgeSnap').checked,voice: $('#voice').checked, alwaysOnTop: $('#alwaysOnTop').checked,
-      motionSpeed: Number($('#motionSpeed').value), motionIntensity: Number($('#motionIntensity').value) });
+      motionSpeed: Number($('#motionSpeed').value), motionIntensity: Number($('#motionIntensity').value),reminders:reminderValues() });
     $('#settings-feedback').textContent = result.ok ? '已保存，准备好啦。' : result.error;
     if (result.ok) { dirty = false; $('#apiKey').value = ''; $('#clearKey').checked = false; update(await api.getState()); }
   } catch { $('#settings-feedback').textContent = '保存失败，请重新打开桌宠后重试。'; } finally { button.disabled = false; }
@@ -133,6 +138,9 @@ for (const [id,key] of [['quick-auto','autoMotion'],['quick-eyes','eyeTracking']
   };
 }
 api.on('pet:status',renderPet);
+document.querySelectorAll('[data-preview-reminder]').forEach(button=>button.onclick=async()=>{const result=await api.previewReminder({id:button.dataset.previewReminder,text:$('#reminder-custom-text').value});if(!result.ok)toast(result.error);});
+$('#save-reminders').onclick=async e=>{const button=e.target;button.disabled=true;try{const latest=await api.getState(),result=await api.saveSettings({...latest.settings,reminders:reminderValues()});if(result.ok){state=await api.getState();renderReminders();$('#reminder-feedback').textContent='提醒已保存。';}else $('#reminder-feedback').textContent=result.error;}catch{$('#reminder-feedback').textContent='保存失败，请稍后重试。';}finally{button.disabled=false;}};
+api.on('reminder:status',value=>{if(state){state.reminderStatus=value;renderReminders();}});setInterval(renderReminders,1000);
 api.on('state', update);
 api.on('panel:tab', tab);
 api.on('chat:delta', delta => { responseText += delta; if (pending) { pending.querySelector('.message-content').textContent = responseText; scroll(); } });

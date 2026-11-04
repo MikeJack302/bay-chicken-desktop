@@ -2,6 +2,7 @@
 <canvas id="pet-canvas" aria-label="三维大湾鸡，点击脑袋、头顶、眼睛、肚子、小手、脚丫、尾巴和后背，有不同的随机反应；左键拖动移动，右键拖动旋转，滚轮缩放，双击回正" tabindex="0" title="左键拖动移动 · 右键拖动旋转 · 滚轮缩放 · F1 帮助"></canvas>
 <div class="load-status" id="load-status" role="status">湾湾正在醒来…</div><div class="load-error" id="load-error" role="alert" data-interactive hidden><p id="error-message"></p><button id="retry-load">重新加载</button></div>
 <div class="pet-bubble quiet" id="bubble">嗨，我是湾湾！今天也陪着你。</div>
+<section id="reminder-card" class="reminder-card" data-interactive hidden aria-label="桌宠提醒"><div id="reminder-title" class="reminder-title">陪你休息一下</div><p id="reminder-content" role="status"></p><div class="reminder-buttons"><button id="reminder-dismiss" type="button">知道啦</button><button id="reminder-snooze" type="button">5 分钟后再说</button></div></section>
 <div id="sleepy" class="sleepy" hidden aria-hidden="true">z<span>z</span></div>
 <div id="pet-dock" class="pet-dock" data-interactive hidden><nav class="pet-tools" aria-label="桌宠工具栏"><button id="move-pet" title="拖动搬家（或按住 Shift 拖动玩偶）" aria-label="拖动搬家"><i data-icon="move"></i></button><button data-action="pet" title="摸摸头" aria-label="摸摸头"><i data-icon="pet"></i></button><button id="reset-view" title="视角回正（双击玩偶）" aria-label="视角回正"><i data-icon="reset"></i></button><button id="more-actions" title="动作与设置" aria-label="动作与设置"><i data-icon="more"></i></button></nav>
 <div class="pet-label"><span class="alive-dot"></span><span id="pet-name">湾湾</span> <span id="pet-state">站着陪你</span></div>

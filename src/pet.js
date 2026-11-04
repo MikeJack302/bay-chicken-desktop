@@ -38,7 +38,7 @@ function updateEdge(side){if(side===edgeMode)return;edgeMode=side;document.body.
 function inVisible(x,y){return !edgeVisible||(x>=edgeVisible.left&&x<=Math.min(innerWidth,edgeVisible.right)&&y>=edgeVisible.top&&y<=Math.min(innerHeight,edgeVisible.bottom));}
 api.on('edge:changed',({side,visible})=>{updateEdge(side);edgeVisible=visible;canvas.style.clipPath=visible?`inset(${visible.top}px ${Math.max(0,innerWidth-visible.right)}px ${Math.max(0,innerHeight-visible.bottom)}px ${visible.left}px)`:'';});
 let config={skin:'white',scale:1,autoMotion:true,eyeTracking:true,motionSpeed:1,motionIntensity:1},ready=false;
-Promise.all([[whiteBytes,'white'],[pinkBytes,'pink']].map(async([bytes,name])=>{const c=await loadCharacter(bytes,name);models[name]=c;modelInfo[name]=c.info;root.add(c.group);})).then(()=>{ready=true;selectModel();document.querySelector('#load-status').hidden=true;dock.hidden=false;say('动作试验版 3：点 … → 动作与玩具\n正式版仍保留在原来的快捷方式',7000);}).catch(error=>{showError('模型未能加载。点击重试，或重新打开桌宠。');console.error(error);});
+Promise.all([[whiteBytes,'white'],[pinkBytes,'pink']].map(async([bytes,name])=>{const c=await loadCharacter(bytes,name);models[name]=c;modelInfo[name]=c.info;root.add(c.group);})).then(()=>{ready=true;selectModel();document.querySelector('#load-status').hidden=true;dock.hidden=false;say('Beta 体验版：点 … → 动作与玩具\n正式版仍保留在原来的快捷方式',7000);}).catch(error=>{showError('模型未能加载。点击重试，或重新打开桌宠。');console.error(error);});
 function selectModel(){for(const [name,c]of Object.entries(models))c.group.visible=name===config.skin;}
 const shadowCanvas=document.createElement('canvas');shadowCanvas.width=128;shadowCanvas.height=128;
 const ctx=shadowCanvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,8,64,64,64);gradient.addColorStop(0,'rgba(0,0,0,.15)');gradient.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
@@ -58,7 +58,20 @@ function action(name){
   trigger(motion,name);
 }
 api.on('action',action);api.on('bubble',text=>say(text,7000));
-function settings(state){const previous=config.nickname;config=state.settings;document.title=`${config.nickname} · 动作试验3 · 大湾鸡`;document.querySelector('#pet-name').textContent=config.nickname;document.querySelector('#load-status').textContent=`${config.nickname}正在醒来…`;if(previous&&previous!==config.nickname)say(`以后就叫我${config.nickname}啦。`);updateEdge(state.edge||null);if(ready)selectModel();}
+const reminderCard=document.querySelector('#reminder-card');let reminderItems=[],reminderTimer,reminderAutomatic=0,reminderPreviews=0;
+function positionReminder(){const r=edgeVisible||{left:0,top:0,right:innerWidth,bottom:innerHeight};reminderCard.style.left=`${r.left+7}px`;reminderCard.style.right=`${Math.max(0,innerWidth-r.right)+7}px`;reminderCard.style.top=`${r.top+7}px`;reminderCard.style.maxHeight=`${Math.max(30,r.bottom-r.top-14)}px`;}
+function dismissReminder(){reminderCard.hidden=true;clearTimeout(reminderTimer);api.dismissReminder();}
+api.on('reminder',value=>{
+ reminderItems=Array.isArray(value.items)?value.items:[];if(!reminderItems.length)return;value.preview?reminderPreviews++:reminderAutomatic++;bubble.classList.add('quiet');
+ document.querySelector('#reminder-title').textContent=`${config.nickname||'湾湾'}${value.preview?' · 提醒试播':'提醒你'}`;document.querySelector('#reminder-content').textContent=reminderItems.map(i=>i.text).join('\n');document.querySelector('#reminder-snooze').hidden=!!value.preview;
+ reminderCard.hidden=false;positionReminder();clearTimeout(reminderTimer);reminderTimer=setTimeout(dismissReminder,20000);
+ if(motion.mode==='idle'&&!motion.paused)trigger(motion,reminderItems[0].id==='move'&&motion.posture==='stand'&&!edgeMode?'stretch':reminderItems[0].id==='eyes'?'look':'wave');
+ window.reminderDiagnostics={automatic:reminderAutomatic,previews:reminderPreviews,last:reminderItems.map(i=>i.id)};
+});
+document.querySelector('#reminder-dismiss').onclick=dismissReminder;document.querySelector('#reminder-snooze').onclick=async()=>{await api.snoozeReminder(reminderItems.map(i=>i.id));dismissReminder();};
+window.addEventListener('resize',positionReminder);
+api.on('edge:changed',positionReminder);
+function settings(state){const previous=config.nickname;config=state.settings;document.title=`${config.nickname} · Beta · 大湾鸡`;document.querySelector('#pet-name').textContent=config.nickname;document.querySelector('#load-status').textContent=`${config.nickname}正在醒来…`;if(previous&&previous!==config.nickname)say(`以后就叫我${config.nickname}啦。`);updateEdge(state.edge||null);if(ready)selectModel();}
 api.on('state',settings);api.getState().then(settings);
 function updateCursor(x,y){cursor={x:THREE.MathUtils.clamp((x-innerWidth/2)/(innerWidth*.65),-1,1),y:THREE.MathUtils.clamp((innerHeight*.44-y)/(innerHeight*.55),-1,1),near:x> -innerWidth*.4&&x<innerWidth*1.4&&y> -innerHeight*.3&&y<innerHeight*1.3};document.body.classList.toggle('near',x>0&&x<innerWidth&&y>0&&y<innerHeight);}
 function updateHit(x,y){if(pointer||dragging)return;const inside=x>=0&&y>=0&&x<innerWidth&&y<innerHeight&&inVisible(x,y);

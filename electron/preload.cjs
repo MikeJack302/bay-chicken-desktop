@@ -2,6 +2,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('bay', {
   getState: () => ipcRenderer.invoke('state:get'),
   saveSettings: value => ipcRenderer.invoke('settings:save', value),
+  previewReminder:value=>ipcRenderer.invoke('reminders:preview',value),
+  snoozeReminder:ids=>ipcRenderer.invoke('reminders:snooze',ids),
+  dismissReminder:()=>ipcRenderer.send('reminders:dismiss'),
   clearHistory: () => ipcRenderer.invoke('history:clear'),
   chat: text => ipcRenderer.invoke('chat:send', text),
   cancelChat: () => ipcRenderer.send('chat:cancel'),
@@ -24,7 +27,7 @@ contextBridge.exposeInMainWorld('bay', {
   openReleases: () => ipcRenderer.send('releases:open'),
   quit: () => ipcRenderer.send('app:quit'),
   on: (channel, listener) => {
-    if (!['state', 'action', 'chat:delta', 'chat:status', 'panel:tab', 'bubble', 'cursor', 'pet:status','drag:ended','help:open','edge:changed'].includes(channel)) return () => {};
+    if (!['state', 'action', 'chat:delta', 'chat:status', 'panel:tab', 'bubble', 'cursor', 'pet:status','drag:ended','help:open','edge:changed','reminder','reminder:status'].includes(channel)) return () => {};
     const handler = (_event, data) => listener(data);
     ipcRenderer.on(channel, handler);
     return () => ipcRenderer.removeListener(channel, handler);

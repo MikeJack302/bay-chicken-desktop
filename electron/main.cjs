@@ -1,9 +1,11 @@
-const { app, BrowserWindow, ipcMain, screen, globalShortcut, Tray, Menu, nativeImage, safeStorage, net, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, globalShortcut, Tray, Menu, nativeImage, safeStorage, net, shell,powerMonitor } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { DEFAULTS, validateSettings, streamChat, offlineReply } = require('./core.cjs');
 const {clampToArea,dragPosition}=require('./desktop.cjs');
 const {SIDES,nearestEdge,dockPosition,visibleRect}=require('./edges.cjs');
+const {createReminderClock,previewReminder}=require('./reminders.cjs');
+const reminderClock=createReminderClock();let reminderTimer,reminderVisibleUntil=0,systemQuiet=false;
 let edgeSide=null,edgeArea=null,edgeTimer=null,edgeTarget=null;
 const windowSizes=new WeakMap();
 function positionWindow(win,p){win.setBounds({...p,...windowSizes.get(win)});}
@@ -15,10 +17,10 @@ let key = '', controller, dragTimer, cursorTimer, dragOrigin, writeQueue = Promi
 let petStatus = { mode: 'idle', posture: 'stand', expression: '自然', paused: false };
 const smoke = process.argv.includes('--smoke');
 if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'bay-chicken-smoke-' + process.pid));
-else app.setPath('userData',path.join(app.getPath('appData'),'bay-chicken-trial-3'));
+else app.setPath('userData',path.join(app.getPath('appData'),'bay-chicken-beta'));
 const stateFile = () => path.join(app.getPath('userData'), 'companion.json');
 const send = (channel, value) => [pet, panel].forEach(w => { if (w && !w.isDestroyed()) w.webContents.send(channel, value); });
-const publicState = () => ({ version:app.getVersion(),shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings, history: state.history, hasKey: !!key, busy: !!controller, petStatus,
+const publicState = () => ({ version:app.getVersion(),shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings,reminderStatus:reminderClock.status(), history: state.history, hasKey: !!key, busy: !!controller, petStatus,
   connected: !!key || (state.settings.provider === 'compatible' && ['localhost', '127.0.0.1', '[::1]'].includes(new URL(state.settings.endpoint).hostname)) });
 function persist() {
   const snapshot = JSON.stringify(state);
@@ -46,16 +48,24 @@ function placePanel() {
 function sizePanel(tab='play') { const height=tab==='play'?390:tab==='chat'?500:520;const width=tab==='play'?280:340;const area=screen.getDisplayMatching(pet.getBounds()).workArea;panel.setResizable(true);panelSize={width,height:Math.min(height,area.height-24)};windowSizes.set(panel,panelSize);panel.setSize(panelSize.width,panelSize.height);panel.setResizable(false);placePanel(); }
 function openPanel(tab = 'play') { sizePanel(tab); panel.show(); panel.focus(); panel.webContents.send('panel:tab', tab); }
 function openHelp(){openPanel('play');panel.webContents.send('help:open');}
+function showReminder(items,preview=false){
+  if(!pet||pet.isDestroyed())return;reminderVisibleUntil=Date.now()+20000;
+  if(preview&&!pet.isVisible())pet.showInactive();send('reminder',{items,preview});send('reminder:status',reminderClock.status());
+}
+function checkReminders(){
+  const available=pet&&!pet.isDestroyed()&&pet.isVisible()&&!systemQuiet&&!dragTimer&&!controller&&!petStatus.paused&&petStatus.mode==='idle'&&Date.now()>=reminderVisibleUntil;
+  const due=reminderClock.poll(available);if(due.length)showReminder(due);
+}
 function refreshIdentity(){
   const name=state.settings.nickname,label=name.replace(/&/g,'&&');
-  pet?.setTitle(`${name} · 动作试验3 · 大湾鸡`);panel?.setTitle(`${name} · 动作试验3`);
+  pet?.setTitle(`${name} · Beta · 大湾鸡`);panel?.setTitle(`${name} · Beta`);
   if(!tray)return;
   let tooltipName='';for(const s of new Intl.Segmenter('zh',{granularity:'grapheme'}).segment(name)){if((tooltipName+s.segment).length>100)break;tooltipName+=s.segment;}
-  tray.setToolTip(`${tooltipName}${tooltipName===name?'':'…'} · 大湾鸡桌宠`);
+  tray.setToolTip(`${tooltipName}${tooltipName===name?'':'…'} · 大湾鸡 Beta`);
   tray.setContextMenu(Menu.buildFromTemplate([
     {label:`陪${label}玩`,click:()=>{pet.show();openPanel('play');}},
     {label:`找${label}聊天`,click:()=>{pet.show();openPanel('chat');}},
-    {label:'显示 / 隐藏桌宠（F8）',click:toggle},
+    {label:'显示 / 隐藏桌宠',click:toggle},
     {label:'回到屏幕右下角',click:home},
     {label:'贴边休息',click:()=>setEdge(nearestEdge(pet.getBounds(),screen.getDisplayMatching(pet.getBounds()).workArea,Infinity))},
     {label:'离开边缘',click:()=>setEdge(null)},
@@ -136,6 +146,9 @@ async function boot() {
   tray = new Tray(image);
   refreshIdentity();
   tray.on('double-click', () => { pet.show(); openPanel(); });
+  reminderClock.configure(state.settings.reminders);reminderTimer=setInterval(checkReminders,1000);reminderTimer.unref();
+  for(const event of['suspend','lock-screen'])powerMonitor.on(event,()=>{systemQuiet=true;});
+  for(const event of['resume','unlock-screen'])powerMonitor.on(event,()=>{systemQuiet=false;reminderClock.reset();send('reminder:status',reminderClock.status());});
   // Preview keeps the stable app global shortcuts untouched.
 
 }
@@ -143,6 +156,9 @@ function trusted(event) { return [pet, panel].some(w => w && !w.isDestroyed() &&
 const handle = (name, fn) => ipcMain.handle(name, (event, ...args) => { if (!trusted(event)) throw Error('Unknown window'); return fn(...args); });
 const on = (name, fn) => ipcMain.on(name, (event, ...args) => { if (trusted(event)) fn(...args); });
 handle('state:get', publicState);
+handle('reminders:preview',value=>{try{showReminder([previewReminder(value)],true);return{ok:true};}catch(error){return{ok:false,error:error.message};}});
+handle('reminders:snooze',ids=>{reminderClock.snooze(ids,5);reminderVisibleUntil=0;send('reminder:status',reminderClock.status());return{ok:true};});
+on('reminders:dismiss',()=>{reminderVisibleUntil=0;});
 handle('settings:save', async value => {
   try {
     if (controller) throw Error('请先停止当前回复，再修改设置。');
@@ -160,6 +176,7 @@ handle('settings:save', async value => {
     state = { ...state, settings, encryptedKey };
     try { await persist(); } catch (error) { state = before; throw error; }
     key = nextKey;
+    reminderClock.configure(settings.reminders);
     pet.setAlwaysOnTop(settings.alwaysOnTop); panel.setAlwaysOnTop(settings.alwaysOnTop);
     refreshIdentity();
     if(before.settings.edgeSnap&&!settings.edgeSnap&&edgeSide)setEdge(null);send('state', publicState()); return { ok: true };
@@ -213,7 +230,7 @@ on('pet:geometry',g=>{
 });
 on('help:open',openHelp);
 on('pet:reload',()=>{endDrag();void pet.loadFile(path.join(__dirname,'../dist/pet.html')).catch(console.error);});
-on('releases:open',()=>{void shell.openExternal('https://github.com/MikeJack302/bay-chicken-desktop/releases/latest').catch(console.error);});
+on('releases:open',()=>{void shell.openExternal('https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v'+app.getVersion()).catch(console.error);});
 on('pet:home',home);
 on('pet:move',point=>{if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return;endDrag({dock:false});if(edgeSide)setEdge(null);const[x,y]=pet.getPosition(),[w,h]=pet.getSize();const p=clampPosition({x:x+Math.max(-40,Math.min(40,point.x)),y:y+Math.max(-40,Math.min(40,point.y))},w,h);positionWindow(pet,p);state.position=p;placePanel();void persist().catch(console.error);});
 on('pet:action', name => {if(edgeSide&&['stand','sit','tennis','serve','victory','lion','ballet','mushroom','barbell','spring','jump','bounce','dance','spin','stretch','walk','balance','bow'].includes(name))setEdge(null); if (['stand','sit','pet','tickle','dance','wave','sleep','idle','jump','stretch','spin','happy','curious','wink','look','pause','walk','nod','shake','bow','balance','peek','yawn','sigh','bounce','eat','ball','pinwheel','tennis','serve','victory','lion','ballet','mushroom','barbell','spring','reset-view'].includes(name)) send('action', name); });
@@ -240,7 +257,7 @@ on('pet:drag-start', point => {
 on('pet:drag-end', endDrag);
 let quitReady=false;
 app.on('before-quit', event => {
-  app.isQuitting=true;controller?.abort();clearInterval(cursorTimer);clearInterval(edgeTimer);
+  app.isQuitting=true;controller?.abort();clearInterval(cursorTimer);clearInterval(edgeTimer);clearInterval(reminderTimer);
   if(quitReady)return;event.preventDefault();endDrag();
   if(pet&&!pet.isDestroyed()){const[x,y]=pet.getPosition();state.position={x,y};}
   let timer;Promise.race([persist(),new Promise(resolve=>{timer=setTimeout(resolve,3000);})]).catch(console.error).finally(()=>{clearTimeout(timer);quitReady=true;app.quit();});

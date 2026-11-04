@@ -1,0 +1,13 @@
+extends: ./electron-builder.yml
+appId: cn.baychicken.desktop.beta
+productName: 湾湾大湾鸡 Beta
+executableName: BayChickenBeta
+directories:
+  output: release/beta
+portable:
+  artifactName: BayChicken-Beta-${version}-x64.exe
+  requestExecutionLevel: user
+win:
+  target:
+    - target: portable
+      arch: x64
