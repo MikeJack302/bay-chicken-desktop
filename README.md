@@ -1,12 +1,20 @@
 # 湾湾 · 大湾鸡三维桌宠
 
+🧪 **[v0.8.0-beta.1 体验版已发布](https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v0.8.0-beta.1)**：新增立体腿脚、举杠铃与连跳、动作表情，以及喝水 / 活动 / 自定义轻提醒。Beta 使用独立配置，稳定版 v0.7.0 继续保留。
+
+<p><img src="docs/beta-0.8.0/screenshots/01-wave.png" width="23%" alt="Beta 招手眨眼"><img src="docs/beta-0.8.0/screenshots/02-dance.png" width="23%" alt="Beta 开心跳舞"><img src="docs/beta-0.8.0/screenshots/03-barbell.png" width="23%" alt="Beta 杠铃与弓步"><img src="docs/beta-0.8.0/screenshots/04-reminder.png" width="23%" alt="Beta 喝水提醒"></p>
+
+[Beta 使用与提醒设置](docs/BETA.md) · [小红书文案与 5 张实机截图](docs/beta-0.8.0/小红书文案.md) · [下载 Beta 分享包](https://github.com/MikeJack302/bay-chicken-desktop/releases/download/v0.8.0-beta.1/BayChicken-Beta-0.8.0-beta.1-Share.zip)
+
+## 稳定版 v0.7.0
+
+
 Windows 透明置顶三维桌宠。使用 Electron + Three.js，保留公开源文件包中的“喜洋洋 / 乐融融”GLB 模型与贴图，在加载时附加 11 根控制骨骼。白色与粉色都支持身体、手臂、短腿、尾巴、眼睛的独立动作。此项目不是官方产品。模型出处见 `assets/models/SOURCE.md`，调研与三视图依据见 `research/model-notes.md`。
 
 **[下载 Windows EXE](https://github.com/MikeJack302/bay-chicken-desktop/releases/latest)** · [小红书文案与配图](docs/share/小红书文案.md) · [来源与第三方说明](NOTICE.md)
 
-<p><img src="docs/share/screenshots/01-stand.png" width="23%" alt="站立实机截图"><img src="docs/share/screenshots/02-tennis.png" width="23%" alt="打网球实机截图"><img src="docs/share/screenshots/03-sit.png" width="23%" alt="坐凳子实机截图"><img src="docs/share/screenshots/04-edge.png" width="23%" alt="趴在屏幕边缘实机截图"></p>
 
-[下载这 4 张实机截图](https://github.com/MikeJack302/bay-chicken-desktop/releases/download/v0.7.0/BayChicken-Screenshots-v0.7.0.zip) · [对应的小红书分享文案](docs/share/小红书文案.md)
+[下载 v0.7.0 的 4 张实机截图](https://github.com/MikeJack302/bay-chicken-desktop/releases/download/v0.7.0/BayChicken-Screenshots-v0.7.0.zip) · [对应的小红书分享文案](docs/share/小红书文案.md)
 
 ## 直接使用
 
