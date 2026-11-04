@@ -15,7 +15,7 @@ let key = '', controller, dragTimer, cursorTimer, dragOrigin, writeQueue = Promi
 let petStatus = { mode: 'idle', posture: 'stand', expression: '自然', paused: false };
 const smoke = process.argv.includes('--smoke');
 if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'bay-chicken-smoke-' + process.pid));
-else app.setPath('userData',path.join(app.getPath('appData'),'bay-chicken-trial'));
+else app.setPath('userData',path.join(app.getPath('appData'),'bay-chicken-trial-2'));
 const stateFile = () => path.join(app.getPath('userData'), 'companion.json');
 const send = (channel, value) => [pet, panel].forEach(w => { if (w && !w.isDestroyed()) w.webContents.send(channel, value); });
 const publicState = () => ({ version:app.getVersion(),shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings, history: state.history, hasKey: !!key, busy: !!controller, petStatus,
@@ -48,7 +48,7 @@ function openPanel(tab = 'play') { sizePanel(tab); panel.show(); panel.focus(); 
 function openHelp(){openPanel('play');panel.webContents.send('help:open');}
 function refreshIdentity(){
   const name=state.settings.nickname,label=name.replace(/&/g,'&&');
-  pet?.setTitle(`${name} · 动作试验 · 大湾鸡`);panel?.setTitle(`${name} · 动作试验`);
+  pet?.setTitle(`${name} · 动作试验2 · 大湾鸡`);panel?.setTitle(`${name} · 动作试验2`);
   if(!tray)return;
   let tooltipName='';for(const s of new Intl.Segmenter('zh',{granularity:'grapheme'}).segment(name)){if((tooltipName+s.segment).length>100)break;tooltipName+=s.segment;}
   tray.setToolTip(`${tooltipName}${tooltipName===name?'':'…'} · 大湾鸡桌宠`);
@@ -216,7 +216,7 @@ on('pet:reload',()=>{endDrag();void pet.loadFile(path.join(__dirname,'../dist/pe
 on('releases:open',()=>{void shell.openExternal('https://github.com/MikeJack302/bay-chicken-desktop/releases/latest').catch(console.error);});
 on('pet:home',home);
 on('pet:move',point=>{if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return;endDrag({dock:false});if(edgeSide)setEdge(null);const[x,y]=pet.getPosition(),[w,h]=pet.getSize();const p=clampPosition({x:x+Math.max(-40,Math.min(40,point.x)),y:y+Math.max(-40,Math.min(40,point.y))},w,h);positionWindow(pet,p);state.position=p;placePanel();void persist().catch(console.error);});
-on('pet:action', name => {if(edgeSide&&['stand','sit','tennis','serve','victory','lion','ballet','mushroom','jump','bounce','dance','spin','stretch','walk','balance','bow'].includes(name))setEdge(null); if (['stand','sit','pet','tickle','dance','wave','sleep','idle','jump','stretch','spin','happy','curious','wink','look','pause','walk','nod','shake','bow','balance','peek','yawn','sigh','bounce','eat','ball','pinwheel','tennis','serve','victory','lion','ballet','mushroom','reset-view'].includes(name)) send('action', name); });
+on('pet:action', name => {if(edgeSide&&['stand','sit','tennis','serve','victory','lion','ballet','mushroom','barbell','spring','jump','bounce','dance','spin','stretch','walk','balance','bow'].includes(name))setEdge(null); if (['stand','sit','pet','tickle','dance','wave','sleep','idle','jump','stretch','spin','happy','curious','wink','look','pause','walk','nod','shake','bow','balance','peek','yawn','sigh','bounce','eat','ball','pinwheel','tennis','serve','victory','lion','ballet','mushroom','barbell','spring','reset-view'].includes(name)) send('action', name); });
 ipcMain.on('pet:status', (event, value) => {
   if (!pet || event.sender !== pet.webContents || !value || typeof value.mode !== 'string') return;
   petStatus = { edge:edgeSide,mode: value.mode.slice(0,24), posture: value.posture === 'sit' ? 'sit' : 'stand', expression: String(value.expression || '').slice(0,24), paused: !!value.paused };

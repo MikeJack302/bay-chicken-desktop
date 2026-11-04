@@ -1,7 +1,7 @@
 extends: ./electron-builder.yml
 appId: cn.baychicken.desktop.trial
-productName: 湾湾动作试验版
-executableName: BayChickenTrial
+productName: 湾湾动作试验版2
+executableName: BayChickenTrial2
 directories:
   output: release/trial
 portable:

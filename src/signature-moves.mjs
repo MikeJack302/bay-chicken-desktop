@@ -1,12 +1,15 @@
+import {barbellPose,springPose} from './playful-moves.mjs';
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const ease=(a,b,v)=>{const t=clamp((v-a)/(b-a));return t*t*t*(t*(t*6-15)+10);};
 const window=(a,b,c,d,t)=>ease(a,b,t)*(1-ease(c,d,t));
-export const SIGNATURE_DURATIONS=Object.freeze({lion:9.2,ballet:6.6,mushroom:8.8});
+export const SIGNATURE_DURATIONS=Object.freeze({lion:9.2,ballet:6.6,mushroom:8.8,barbell:9.9,spring:6.8});
 
 // Trial choreography: the original mesh, head scale and camera stay unchanged.
 // "ballet" is deliberately provisional until the exact Oi clip is available.
 export function signaturePose(action,t,intensity=1){
   const d=SIGNATURE_DURATIONS[action];if(!d)return null;
+  if(action==='barbell')return barbellPose(t);
+  if(action==='spring')return springPose(t,intensity);
   const e=window(0,.65,d-.75,d,t),s=clamp(intensity,.5,1.3);
   const p={hipsDrop:0,torsoDrop:0,legRollL:0,legRollR:0,legYawL:0,legYawR:0,legSpread:0,hipPitch:0,legLiftL:0,legLiftR:0,
     armL:0,armR:0,armLX:0,armRX:0,headX:0,headY:0,headZ:0,torsoX:0,x:0,y:0,yaw:0,sway:0,legL:0,legR:0};

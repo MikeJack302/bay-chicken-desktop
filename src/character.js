@@ -25,6 +25,7 @@ export async function loadCharacter(bytes,name) {
   ids.head=add('head','torso',[0,.45,0]);ids.armL=add('armL','torso',[-.60,.04,0]);ids.armR=add('armR','torso',[.60,.04,0]);
   ids.legL=add('legL','hips',[-.36,-.12,.03]);ids.legR=add('legR','hips',[.36,-.12,.03]);ids.tail=add('tail','hips',[0,-.08,-.5]);
   ids.eyeL=add('eyeL','head',[-.60,.451,.62]);ids.eyeR=add('eyeR','head',[.626,.451,.60]);
+  ids.footL=add('footL','legL',[0,-.24,.08]);ids.footR=add('footR','legR',[0,-.24,.08]);
   const skeleton=new THREE.Skeleton(bones);group.updateMatrixWorld(true);skeleton.calculateInverses();
   const meshes=[],feet=[],screenSamples=[];let eyeMeshCount=0;
   gltf.scene.traverse(object=>{
@@ -42,9 +43,11 @@ export async function loadCharacter(bytes,name) {
       else {
         const head=smooth(1.13,1.52,y),arm=smooth(.57,.88,Math.abs(x))*(1-smooth(.96,1.14,y))*smooth(.42,.60,y);
         const tail=(1-smooth(-.95,-.58,z))*(1-smooth(.8,1.25,y));
-        const leg=(1-smooth(.28,.64,y))*(1-tail);
+        // Keep the lower belly on the pelvis; leg abduction must not pull it into a flap.
+        const leg=(1-smooth(.20,.43,y))*(1-tail);
         const remaining=Math.max(0,1-head-arm-tail-leg),torso=smooth(.4,.9,y);
-        weights=[[ids.head,head],[ids['arm'+side],arm],[ids.tail,tail],[ids['leg'+side],leg],[ids.torso,remaining*torso],[ids.hips,remaining*(1-torso)]].filter(w=>w[1]>.0001).sort((a,b)=>b[1]-a[1]).slice(0,4);
+        const foot=1-smooth(.10,.26,y);
+        weights=[[ids.head,head],[ids['arm'+side],arm],[ids.tail,tail],[ids['leg'+side],leg*(1-foot)],[ids['foot'+side],leg*foot],[ids.torso,remaining*torso],[ids.hips,remaining*(1-torso)]].filter(w=>w[1]>.0001).sort((a,b)=>b[1]-a[1]).slice(0,4);
       }
       const total=weights.reduce((sum,w)=>sum+w[1],0);
       weights.forEach(([index,weight],j)=>{skinIndices[i*4+j]=index;skinWeights[i*4+j]=weight/total;});
@@ -68,10 +71,25 @@ export function poseCharacter(character,p,dt) {
   b.hips.position.y=THREE.MathUtils.lerp(b.hips.position.y,.5-p.sit*.30-(p.hipsDrop||0),alpha);
   b.hips.position.z=THREE.MathUtils.lerp(b.hips.position.z,-p.sit*.12,alpha);
   b.torso.position.y=THREE.MathUtils.lerp(b.torso.position.y,.5-(p.torsoDrop||0),alpha);
+  b.armL.position.z=THREE.MathUtils.lerp(b.armL.position.z,p.armForward||0,alpha);b.armR.position.z=THREE.MathUtils.lerp(b.armR.position.z,p.armForward||0,alpha);
   b.legL.position.x=THREE.MathUtils.lerp(b.legL.position.x,-.36-(p.legSpread||0),alpha);b.legR.position.x=THREE.MathUtils.lerp(b.legR.position.x,.36+(p.legSpread||0),alpha);
   b.legL.position.y=THREE.MathUtils.lerp(b.legL.position.y,-.12+(p.legLiftL||0),alpha);b.legR.position.y=THREE.MathUtils.lerp(b.legR.position.y,-.12+(p.legLiftR||0),alpha);
-  rot('hips',p.sit*.09+(p.hipPitch||0));rot('torso',-p.sit*.08+p.breath+(p.torsoX||0),0,p.sway*.12);
+  rot('hips',p.sit*.09+(p.hipPitch||0));rot('torso',-p.sit*.08+p.breath+(p.torsoX||0),p.torsoYaw||0,p.sway*.12);
   rot('head',p.headX,p.headY,p.headZ);rot('armL',p.armLX,p.armLY||0,p.armL);rot('armR',p.armRX,p.armRY||0,p.armR);
   rot('legL',-p.sit*1.22+p.legL,p.sit*-.15+(p.legYawL||0),-p.sit*.12+(p.legRollL||0));rot('legR',-p.sit*1.22+p.legR,p.sit*.15+(p.legYawR||0),p.sit*.12+(p.legRollR||0));rot('tail',0,p.tail,0);
+  for(const side of['L','R']){
+    footRotation.setFromEuler(footEuler.set(p['footPitch'+side]||0,p['footYaw'+side]||0,0));
+    footParent.multiplyQuaternions(b.hips.quaternion,b['leg'+side].quaternion).invert();footRotation.premultiply(footParent);
+    footIdentity.identity().slerp(footRotation,p.footControl||0);b['foot'+side].quaternion.slerp(footIdentity,alpha);
+  }
+  if(p.footPlant>.001){
+    character.group.updateWorldMatrix(true,true);
+    for(const side of['L','R']){
+      const current=b['foot'+side].getWorldPosition(footCurrent),target=character.group.localToWorld(footTarget.set((side==='L'?-.36:.36)+(p['foot'+side+'X']||0),.14+(p['footLift'+side]||0),.11+(p['foot'+side+'Z']||0)));
+      b.hips.worldToLocal(current);b.hips.worldToLocal(target);b['leg'+side].position.addScaledVector(target.sub(current),p.footPlant);
+    }
+  }
   for(const side of ['L','R']) { const eye=b['eye'+side];rot('eye'+side,-p.gazeY*.20,p.gazeX*.26,0);eye.scale.y=THREE.MathUtils.lerp(eye.scale.y,Math.max(.025,p['eye'+side]),1-Math.exp(-dt*32));eye.scale.x=THREE.MathUtils.lerp(eye.scale.x,p.wide,alpha); }
 }
+const footCurrent=new THREE.Vector3(),footTarget=new THREE.Vector3();
+const footRotation=new THREE.Quaternion(),footParent=new THREE.Quaternion(),footIdentity=new THREE.Quaternion(),footEuler=new THREE.Euler();

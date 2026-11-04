@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import {tennisSample} from './tennis.mjs';
 import {buildTennisRacket,RACKET_PROFILE} from './tennis-racket.mjs';
+import {buildBarbell} from './barbell.mjs';
+import {BARBELL_GRIP} from './playful-moves.mjs';
 
 const up=new THREE.Vector3(0,1,0),v=new THREE.Vector3(),mouth=new THREE.Vector3(),direction=new THREE.Vector3(),q=new THREE.Quaternion();
 const clamp=THREE.MathUtils.clamp;
@@ -46,11 +48,19 @@ export function createProps(scene){
   const seam=[];for(let i=0;i<=80;i++){const a=i/80*Math.PI*2;seam.push(new THREE.Vector3(Math.cos(a)*.8,Math.sin(a),.6*Math.cos(2*a)).normalize().multiplyScalar(RACKET_PROFILE.ballRadius+.0015));}
   mesh(tennisBall,new THREE.TubeGeometry(new THREE.CatmullRomCurve3(seam,true),80,.003,5,true),mat('#ffffe4',.9));
   const contact=new THREE.Vector3(),ballOffset=new THREE.Vector3(),rotation=new THREE.Euler();
-  const all=[stool,candy,ball,pinwheel,racket,tennisBall];all.forEach(o=>{o.visible=false;o.traverse(m=>{if(m.material)m.material=m.material.clone();});});
+  const barbell=buildBarbell();scene.add(barbell);
+  const leftGrip=new THREE.Vector3(),rightGrip=new THREE.Vector3(),barAxis=new THREE.Vector3(),xAxis=new THREE.Vector3(1,0,0);
+  const all=[stool,candy,ball,pinwheel,racket,tennisBall,barbell];all.forEach(o=>{o.visible=false;o.traverse(m=>{if(m.material)m.material=m.material.clone();});});
   const pose={chair:0,eat:0,bites:0,ball:0,pinwheel:0,tennis:0,tennisKind:0,tennisPhase:''};
   function update(character,root,p,dt,paused=false){
     Object.assign(pose,{chair:p.chair,eat:p.eat,bites:p.bites,ball:p.ball,pinwheel:p.pinwheel,tennis:p.tennis,tennisKind:p.tennisKind});
     root.updateMatrixWorld(true);const s=root.scale.x;
+    pose.barbell=p.barbell||0;fade(barbell,clamp(p.barbell||0,0,1));
+    if(barbell.visible){
+      const a=BARBELL_GRIP;character.bone.armL.localToWorld(leftGrip.set(-a.palmX,a.palmY,a.palmZ));character.bone.armR.localToWorld(rightGrip.set(a.palmX,a.palmY,a.palmZ));
+      barbell.position.copy(leftGrip).add(rightGrip).multiplyScalar(.5);barAxis.subVectors(rightGrip,leftGrip).normalize();barbell.quaternion.setFromUnitVectors(xAxis,barAxis);barbell.scale.setScalar(s);
+      pose.barGripSpan=leftGrip.distanceTo(rightGrip)/s;pose.barAxis=[barAxis.x,barAxis.y,barAxis.z];
+    }
     fade(stool,clamp(p.chair,0,1));stool.position.set(-.52,.20,-.13);stool.scale.setScalar(s*(.82+.18*p.chair));
     fade(candy,clamp(p.eat,0,1));
     if(candy.visible){

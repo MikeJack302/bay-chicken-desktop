@@ -1,5 +1,5 @@
 const{test}=require('node:test'),assert=require('node:assert/strict');
-const actions=['lion','ballet','mushroom'];
+const actions=['lion','ballet','mushroom','barbell','spring'];
 test('trial actions finish on the floor, clear the stool and keep the head scale intact',async()=>{
   const{createMotion,trigger,stepMotion,setPerch}=await import('../src/motion.mjs');
   for(const action of actions)for(const speed of[.6,1,1.6]){
