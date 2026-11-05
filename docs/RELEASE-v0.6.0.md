@@ -25,7 +25,6 @@
 
 - **BayChicken-Setup-0.6.0-x64.exe**：中文安装版。
 - **BayChicken-Portable-0.6.0-x64.exe**：单文件便携版，首次需等待解包。
-- **BayChicken-Xiaohongshu-Kit-v0.6.0.zip**：8 张分享图、实机截图和更新文案。
 - **SHA256SUMS.txt**：文件校验值。
 
 更新前退出旧版。继续使用原有设置与聊天目录，形象互动无需 API Key。AI 聊天仍需自行配置。程序未配置代码签名；多显示器逻辑有自动检查，实体不同 DPI 组合尚未逐一覆盖。

@@ -13,3 +13,13 @@ research/*
 .env.*
 *.pem
 *.key
+
+# Local publishing material stays on this computer.
+docs/share/
+docs/beta-0.8.0/
+docs/xiaohongshu-*/
+scripts/capture-share.cjs
+scripts/render-share.cjs
+scripts/capture-beta-share.cjs
+scripts/create-guangzhou-post.cjs
+docs/SIGNATURE-TRIAL.md

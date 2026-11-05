@@ -1,0 +1,69 @@
+name: Build versioned Beta packages
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: beta-packages-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  package:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-2025
+            arch: x64
+            command: pnpm exec electron-builder --config electron-builder.beta.yml --win portable --x64 --publish never
+            output: release/beta
+            artifact: windows-x64
+          - name: macOS Apple Silicon
+            os: macos-15
+            arch: arm64
+            command: pnpm exec electron-builder --config electron-builder.macos.yml --mac --arm64 --publish never
+            output: release/macos
+            artifact: mac-arm64
+          - name: macOS Intel
+            os: macos-15-intel
+            arch: x64
+            command: pnpm exec electron-builder --config electron-builder.macos.yml --mac --x64 --publish never
+            output: release/macos
+            artifact: mac-x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 11.25.0
+          run_install: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24.22.0'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Install the native Electron runtime
+        run: node node_modules/electron/install.js
+      - run: pnpm test
+      - run: pnpm run build
+      - name: Package for the native architecture
+        run: ${{ matrix.command }}
+      - name: Verify the packaged application and reminders
+        run: node scripts/verify-release-bundle.cjs
+      - name: Generate checksums
+        run: node scripts/distribution-checksums.cjs
+      - uses: actions/upload-artifact@v6
+        with:
+          name: beta-${{ matrix.artifact }}
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+          path: |
+            ${{ matrix.output }}/*.exe
+            ${{ matrix.output }}/*.dmg
+            ${{ matrix.output }}/*.zip
+            ${{ matrix.output }}/SHA256SUMS-*.txt
