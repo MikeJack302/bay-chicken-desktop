@@ -1,13 +1,44 @@
 name: Build versioned Beta packages
 on:
   workflow_dispatch:
+    inputs:
+      graphics_diagnostics:
+        description: Diagnose hosted Intel Mac graphics without packaging
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
   group: beta-packages-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  graphics:
+    if: ${{ inputs.graphics_diagnostics }}
+    runs-on: macos-15-intel
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 11.25.0
+          run_install: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24.22.0'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: node node_modules/electron/install.js
+      - run: brew install vulkan-loader
+      - run: node scripts/probe-macos-graphics.cjs
+      - uses: actions/upload-artifact@v6
+        with:
+          name: macos-graphics-diagnostics
+          path: macos-graphics-diagnostics.json
+          retention-days: 7
   package:
+    if: ${{ !inputs.graphics_diagnostics }}
     name: ${{ matrix.name }}
     strategy:
       fail-fast: false
