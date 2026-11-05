@@ -8,7 +8,7 @@
 | [v0.7.0](https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v0.7.0) | 稳定版：改名、网球、趴边 | [安装版](https://github.com/MikeJack302/bay-chicken-desktop/releases/download/v0.7.0/BayChicken-Setup-0.7.0-x64.exe) / [便携版](https://github.com/MikeJack302/bay-chicken-desktop/releases/download/v0.7.0/BayChicken-Portable-0.7.0-x64.exe) | — |
 | [v0.6.0](https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v0.6.0) | 稳定版：网球、屏幕趴边 | [安装版](https://github.com/MikeJack302/bay-chicken-desktop/releases/download/v0.6.0/BayChicken-Setup-0.6.0-x64.exe) / [便携版](https://github.com/MikeJack302/bay-chicken-desktop/releases/download/v0.6.0/BayChicken-Portable-0.6.0-x64.exe) | — |
 
-macOS 版本正在构建验证，将作为新的 v0.8.0-beta.2 提供，不覆盖上表版本。
+macOS v0.8.0-beta.2 仍在内部验证，尚未公开下载。上表各版本继续保留，不会被覆盖。
 
 每个 Release 的 `SHA256SUMS.txt` 可用于校验对应版本的软件文件。[查看全部历史发行版](https://github.com/MikeJack302/bay-chicken-desktop/releases)。
 

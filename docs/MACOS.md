@@ -4,7 +4,9 @@
 
 ## 选择安装包
 
-在 [版本下载页](DOWNLOADS.md) 选择版本和架构。Apple 芯片请选择 `mac-arm64`，Intel 芯片请选择 `mac-x64`。
+当前 v0.8.0-beta.2 为内部测试构建，安装包只存于本地和 GitHub 草稿，尚未公开发布。正式开放下载时会加入 [版本下载页](DOWNLOADS.md)。
+
+点苹果菜单 →“关于本机”查看机型：显示“芯片 Apple M…”请选择 `mac-arm64`；显示“处理器 Intel…”请选择 `mac-x64`。
 
 打开 DMG 后把应用拖到“应用程序”；ZIP 为相同应用的压缩版本。首次运行请在应用程序中打开。程序运行后，菜单栏会显示图标，可用于显示、隐藏、设置和退出。
 
@@ -23,7 +25,8 @@
 在 `release/beta-0.8` 分支，使用 Node.js 24 和 pnpm：
 
 ```sh
-pnpm install --frozen-lockfile
+pnpm install --frozen-lockfile --ignore-scripts
+node node_modules/electron/install.js
 pnpm test
 pnpm run build
 pnpm exec electron-builder --config electron-builder.macos.yml --mac --arm64 --publish never

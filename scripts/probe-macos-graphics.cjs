@@ -30,12 +30,19 @@ const { execFileSync } = require('node:child_process');
     { name: 'metal', angle: 'metal' },
     { name: 'swiftshader', angle: 'swiftshader-webgl' },
     { name: 'swiftshader-with-loader', angle: 'swiftshader-webgl', libdir },
+    { name: 'swiftshader-with-bundled-loader', angle: 'swiftshader-webgl', bundledLoader:true },
   ];
   const results = [];
   for (const variant of variants) {
     let app;
     const stderr = [];
     try {
+      if (variant.bundledLoader) {
+        const bundle = path.resolve(path.dirname(require('electron')), '../..');
+        const libraries = path.join(bundle,'Contents/Frameworks/Electron Framework.framework/Libraries');
+        await fs.copyFile(path.join(libdir,'libvulkan.dylib'),path.join(libraries,'libvulkan.dylib'));
+        execFileSync('/usr/bin/codesign',['--force','--deep','--sign','-',bundle],{stdio:'inherit'});
+      }
       const env = {...process.env, BAY_PROBE_ANGLE: variant.angle || ''};
       delete env.ELECTRON_RUN_AS_NODE;
       if (variant.libdir) env.DYLD_LIBRARY_PATH = variant.libdir;

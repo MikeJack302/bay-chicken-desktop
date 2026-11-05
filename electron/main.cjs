@@ -236,7 +236,7 @@ on('pet:geometry',g=>{
 });
 on('help:open',openHelp);
 on('pet:reload',()=>{endDrag();void pet.loadFile(path.join(__dirname,'../dist/pet.html')).catch(console.error);});
-on('releases:open',()=>{void shell.openExternal('https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v'+app.getVersion()).catch(console.error);});
+on('releases:open',()=>{void shell.openExternal('https://github.com/MikeJack302/bay-chicken-desktop/releases').catch(console.error);});
 on('pet:home',home);
 on('pet:move',point=>{if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return;endDrag({dock:false});if(edgeSide)setEdge(null);const[x,y]=pet.getPosition(),[w,h]=pet.getSize();const p=clampPosition({x:x+Math.max(-40,Math.min(40,point.x)),y:y+Math.max(-40,Math.min(40,point.y))},w,h);positionWindow(pet,p);state.position=p;placePanel();void persist().catch(console.error);});
 on('pet:action', name => {if(edgeSide&&['stand','sit','tennis','serve','victory','lion','ballet','mushroom','barbell','spring','jump','bounce','dance','spin','stretch','walk','balance','bow'].includes(name))setEdge(null); if (['stand','sit','pet','tickle','dance','wave','sleep','idle','jump','stretch','spin','happy','curious','wink','look','pause','walk','nod','shake','bow','balance','peek','yawn','sigh','bounce','eat','ball','pinwheel','tennis','serve','victory','lion','ballet','mushroom','barbell','spring','reset-view'].includes(name)) send('action', name); });

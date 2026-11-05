@@ -46,7 +46,13 @@ function update(next) {
   $('#hello-chip').textContent=`你好，${name()}`;$('#help-title').textContent=`陪${name()}玩`;
   $('#message-input').placeholder=`和${name()}说点什么…`;
   $('#app-version').textContent=`湾湾 v${state.version}`;
-  if(state.platform==='darwin')$('#platform-hint').textContent='Beta · 使用菜单栏图标显示 / 隐藏；左键搬家，右键或 Option + 拖动旋转。';
+  if(state.platform==='darwin'){
+    $('#platform-hint').textContent='Beta · 菜单栏图标可显示 / 隐藏；左键搬家，右键或 Option + 左键拖动旋转。';
+    $('#show-help').textContent='左键搬家 · Option 旋转 ⓘ';
+    $('#show-help').title='操作指南';
+    $('.help-intro').textContent='轻点互动，左键搬家。触控板可按住 Option，再用左键拖动旋转。';
+    $('.help-keys').innerHTML=$('.help-keys').innerHTML.replace('Alt +','Option +');
+  }
   $('#shortcut-status').textContent=state.version.includes('beta')?`Beta：使用${state.platform==='darwin'?'菜单栏图标':'托盘'}显示 / 隐藏桌宠，点「…」打开面板。`:`${state.shortcuts?.toggle?'F8 显示 / 隐藏':'F8 被占用，请使用托盘'} · ${state.shortcuts?.panel?'Ctrl + Alt + B 打开面板':'面板快捷键被占用，可点「…」'}`;
   $('.connection').classList.toggle('online', state.connected);
   $('#connection-label').textContent = state.connected ? `AI 已配置 · ${state.settings.model}` : '离线陪伴 · 预设回应';
