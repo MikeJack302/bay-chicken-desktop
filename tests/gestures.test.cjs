@@ -7,6 +7,9 @@ test('left moves, right rotates, and small hand tremors still count as clicks',a
   const r=beginGesture({...e,button:2});assert.equal(gestureResult(r),'menu');moveGesture(r,{...e,screenY:320});assert.equal(gestureResult(r),'rotate');assert.equal(gestureResult(r,true),'cancel');
   assert.equal(moveGesture(r,{...e,pointerId:2}),null);assert.equal(beginGesture({...e,button:4}),null);
 });
+test('Option or Alt plus left drag rotates while the move handle still moves',async()=>{
+  const{beginGesture,moveGesture,gestureResult}=await import('../src/gestures.mjs');const e={pointerId:1,button:0,altKey:true,screenX:120,screenY:100},g=beginGesture(e);moveGesture(g,{...e,screenX:145});assert.equal(gestureResult(g),'rotate');assert.equal(beginGesture(e,true).purpose,'move');
+});
 test('window placement stays visible on small, negative-coordinate and mixed DPI work areas',()=>{
   const{clampToArea,dragPosition}=require('../electron/desktop.cjs');const a={x:-1536,y:-200,width:1536,height:824};
   assert.deepEqual(clampToArea({x:-9999,y:9999},320,400,a),{x:-1536,y:224});

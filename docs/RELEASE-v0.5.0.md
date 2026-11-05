@@ -31,7 +31,6 @@
 
 - **BayChicken-Setup-0.5.0-x64.exe**：Windows x64 安装版，中文向导。
 - **BayChicken-Portable-0.5.0-x64.exe**：单文件便携版，首次需等待解包。设置仍保存在 Windows 用户目录。
-- **BayChicken-Xiaohongshu-Kit-v0.5.0.zip**：更新后的 6 张竖图、实机截图与文案。
 - **SHA256SUMS.txt**：下载文件校验值。
 
 更新前先从托盘退出旧版，再覆盖安装或运行新的便携 EXE。沿用 `%APPDATA%/bay-chicken` 下的设置和聊天数据。不会自动联网安装更新。

@@ -1,0 +1,38 @@
+extends: ./electron-builder.beta.yml
+directories:
+  output: release/macos
+extraFiles:
+  - from: README.md
+    to: README.md
+  - from: NOTICE.md
+    to: NOTICE.md
+  - from: assets/models/SOURCE.md
+    to: MODEL-SOURCE.md
+  - from: node_modules/electron/LICENSE
+    to: ELECTRON-LICENSE.txt
+mac:
+  target:
+    - dmg
+    - zip
+  artifactName: BayChicken-Beta-${version}-mac-${arch}.${ext}
+  category: public.app-category.utilities
+  icon: assets/mac-icon.png
+  minimumSystemVersion: '13.0'
+  identity: '-'
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  notarize: false
+  extendInfo:
+    LSUIElement: true
+  entitlements: assets/entitlements.mac.plist
+  entitlementsInherit: assets/entitlements.mac.plist
+dmg:
+  sign: false
+  title: 湾湾大湾鸡 Beta
+  contents:
+    - x: 130
+      y: 190
+    - x: 410
+      y: 190
+      type: link
+      path: /Applications

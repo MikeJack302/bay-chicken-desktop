@@ -1,8 +1,11 @@
 # 湾湾大湾鸡 Beta 使用说明
 
-当前版本：`0.8.0-beta.1`（2026-11-04）。Windows x64，非官方个人作品。
+当前版本：`0.8.0-beta.2`（2026-11-05）。Windows x64 / macOS 13+，非官方个人作品。
 
 ## 下载与启动
+
+[选择所有历史版本](DOWNLOADS.md) · [macOS 安装、菜单栏与触控板操作](MACOS.md)
+
 
 在 [Beta 发布页](https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v0.8.0-beta.1) 下载 `BayChicken-Beta-0.8.0-beta.1-x64.exe`，双击运行。模型已包含在 EXE 内，不需要 Node.js 或 API Key 即可玩动作和使用提醒。首次启动有解包过程。
 
@@ -35,8 +38,7 @@
 pnpm install
 pnpm test
 pnpm beta
-node scripts/verify-beta-package.cjs
-node scripts/verify-beta-portable.cjs
+node scripts/verify-release-bundle.cjs
 node scripts/reminders-smoke.cjs
 ```
 

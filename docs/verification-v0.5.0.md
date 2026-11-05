@@ -15,7 +15,6 @@
 | 安装版 `scripts/props-smoke.cjs` | 底栏、窗口尺寸、3 种大小、凳子、3 种道具、8 部位随机点击通过 |
 | 单文件 `scripts/portable-smoke.cjs` | 自解压、asar/preload/模型启动、凳子与玩具通过，无渲染错误 |
 | 原始模型 | 三个 GLB 与原始 SHA-256 一致 |
-| 分享素材 | 更新的 6 张配图均为 1080×1440，保留实机截图来源记录 |
 
 GitHub Windows CI 配置见 `.github/workflows/ci.yml`：冻结依赖安装、单元测试、构建。发布前另核对当次执行结果。EXE 与素材包上传后以 GitHub 返回的 SHA-256 对照本地文件校验。
 

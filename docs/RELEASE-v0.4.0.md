@@ -6,7 +6,6 @@
 
 - **BayChicken-Setup-0.4.0-x64.exe**：中文安装向导，可选目录，附桌面与开始菜单快捷方式。
 - **BayChicken-Portable-0.4.0-x64.exe**：单文件便携版，双击解包运行。首次启动需等待解包；设置和聊天记录仍存放在 Windows 用户目录。
-- **BayChicken-Xiaohongshu-Kit-v0.4.0.zip**：6 张 1080×1440 小红书配图、原始实机截图、长短两版文案和配图顺序。
 - **SHA256SUMS.txt**：下载文件校验值。
 
 无需安装 Node.js，模型已内置；形象互动不需要 API Key。程序未做代码签名。

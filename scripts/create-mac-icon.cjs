@@ -1,0 +1,4 @@
+const{_electron}=require('playwright'),path=require('node:path'),{pathToFileURL}=require('node:url');
+(async()=>{const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;const app=await _electron.launch({executablePath:require('electron'),args:[path.resolve('scripts/artwork-main.cjs')],env});try{
+ const p=await app.firstWindow();await p.setViewportSize({width:1024,height:1024});await p.goto(pathToFileURL(path.resolve('assets/app-icon.svg')).href);await p.evaluate(()=>{document.documentElement.setAttribute('width','1024');document.documentElement.setAttribute('height','1024');});await p.screenshot({path:path.resolve('assets/mac-icon.png'),omitBackground:true,scale:'css'});console.log('Rendered application icon at 1024px.');
+}finally{await app.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

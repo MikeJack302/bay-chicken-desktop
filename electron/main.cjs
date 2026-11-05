@@ -20,7 +20,7 @@ if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'bay-chicken-s
 else app.setPath('userData',path.join(app.getPath('appData'),'bay-chicken-beta'));
 const stateFile = () => path.join(app.getPath('userData'), 'companion.json');
 const send = (channel, value) => [pet, panel].forEach(w => { if (w && !w.isDestroyed()) w.webContents.send(channel, value); });
-const publicState = () => ({ version:app.getVersion(),shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings,reminderStatus:reminderClock.status(), history: state.history, hasKey: !!key, busy: !!controller, petStatus,
+const publicState = () => ({ version:app.getVersion(),platform:process.platform,shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings,reminderStatus:reminderClock.status(), history: state.history, hasKey: !!key, busy: !!controller, petStatus,
   connected: !!key || (state.settings.provider === 'compatible' && ['localhost', '127.0.0.1', '[::1]'].includes(new URL(state.settings.endpoint).hostname)) });
 function persist() {
   const snapshot = JSON.stringify(state);
@@ -128,6 +128,10 @@ async function boot() {
   pet = securedWindow({ ...size, ...p, title: '湾湾 · 大湾鸡', frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false, resizable: false, skipTaskbar: true, alwaysOnTop: state.settings.alwaysOnTop, show: false }, 'pet.html');
   panel = securedWindow({ width: 280, height: Math.min(390, area.height - 24), title: '湾湾', frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false, resizable: false, alwaysOnTop: state.settings.alwaysOnTop, show: false }, 'panel.html');
   windowSizes.set(pet,size);windowSizes.set(panel,panelSize);
+  if(process.platform==='darwin'){
+    app.dock?.hide();pet.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});panel.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
+    Menu.setApplicationMenu(Menu.buildFromTemplate([{label:'湾湾大湾鸡 Beta',submenu:[{role:'about'},{type:'separator'},{label:'显示桌宠',click:()=>pet.show()},{label:'设置',click:()=>openPanel('settings')},{type:'separator'},{role:'hide'},{role:'quit'}]},{role:'editMenu'}]));
+  }
   pet.once('ready-to-show', () => {positionWindow(pet,p);pet.show();if(state.edgeSide)setEdge(state.edgeSide);});
   panel.on('close', e => { if (!app.isQuitting) { e.preventDefault(); panel.hide(); } });
   pet.on('closed', () => app.quit());
@@ -143,7 +147,9 @@ async function boot() {
   const keepVisible=()=>{endDrag({dock:false});const[w,h]=pet.getSize();const[x,y]=pet.getPosition();const pos=clampPosition({x,y},w,h);positionWindow(pet,pos);state.position=pos;if(edgeSide)setEdge(edgeSide);placePanel();void persist().catch(console.error);};
   screen.on('display-metrics-changed',keepVisible);screen.on('display-removed',keepVisible);
   const image = nativeImage.createFromPath(path.join(__dirname, '../assets/icon.png'));
-  tray = new Tray(image);
+  const trayImage=process.platform==='darwin'?image.resize({width:18,height:18}):image;
+  if(process.platform==='darwin')trayImage.setTemplateImage(true);
+  tray = new Tray(trayImage);
   refreshIdentity();
   tray.on('double-click', () => { pet.show(); openPanel(); });
   reminderClock.configure(state.settings.reminders);reminderTimer=setInterval(checkReminders,1000);reminderTimer.unref();

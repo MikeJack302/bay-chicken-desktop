@@ -46,7 +46,8 @@ function update(next) {
   $('#hello-chip').textContent=`你好，${name()}`;$('#help-title').textContent=`陪${name()}玩`;
   $('#message-input').placeholder=`和${name()}说点什么…`;
   $('#app-version').textContent=`湾湾 v${state.version}`;
-  $('#shortcut-status').textContent=state.version.includes('beta')?'Beta：使用托盘显示 / 隐藏桌宠，点「…」打开面板。':`${state.shortcuts?.toggle?'F8 显示 / 隐藏':'F8 被占用，请使用托盘'} · ${state.shortcuts?.panel?'Ctrl + Alt + B 打开面板':'面板快捷键被占用，可点「…」'}`;
+  if(state.platform==='darwin')$('#platform-hint').textContent='Beta · 使用菜单栏图标显示 / 隐藏；左键搬家，右键或 Option + 拖动旋转。';
+  $('#shortcut-status').textContent=state.version.includes('beta')?`Beta：使用${state.platform==='darwin'?'菜单栏图标':'托盘'}显示 / 隐藏桌宠，点「…」打开面板。`:`${state.shortcuts?.toggle?'F8 显示 / 隐藏':'F8 被占用，请使用托盘'} · ${state.shortcuts?.panel?'Ctrl + Alt + B 打开面板':'面板快捷键被占用，可点「…」'}`;
   $('.connection').classList.toggle('online', state.connected);
   $('#connection-label').textContent = state.connected ? `AI 已配置 · ${state.settings.model}` : '离线陪伴 · 预设回应';
   $('#connect-link').textContent = state.connected ? '连接设置 ↗' : '连接 AI ↗';
