@@ -4,13 +4,13 @@
 
 ## 选择安装包
 
-当前 v0.8.0-beta.2 为内部测试构建，安装包只存于本地和 GitHub 草稿，尚未公开发布。正式开放下载时会加入 [版本下载页](DOWNLOADS.md)。
+v0.9.0 Beta 的 DMG 和 ZIP 在 [GitHub Release](https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v0.9.0-beta)。
 
 点苹果菜单 →“关于本机”查看机型：显示“芯片 Apple M…”请选择 `mac-arm64`；显示“处理器 Intel…”请选择 `mac-x64`。
 
 打开 DMG 后把应用拖到“应用程序”；ZIP 为相同应用的压缩版本。首次运行请在应用程序中打开。程序运行后，菜单栏会显示图标，可用于显示、隐藏、设置和退出。
 
-当前 Beta 采用 ad-hoc 本地签名，没有 Apple Developer ID 公证。如果系统阻止首次打开，请先确认下载来源和 SHA-256，再按 [Apple 官方说明](https://support.apple.com/en-us/102445)，在“系统设置 → 隐私与安全”中确认是否允许打开。无需关闭系统的 Gatekeeper。
+当前 Beta 使用 ad-hoc 签名，尚未使用 Developer ID 证书签名和 Apple 公证。首次打开如遇开发者无法验证的提示，请先确认下载来源和 SHA-256，再按 [Apple 官方说明](https://support.apple.com/en-us/102445) 在“系统设置 → 隐私与安全”中确认是否允许打开。
 
 ## 操作
 
@@ -22,7 +22,7 @@
 
 ## 本机构建
 
-在 `release/beta-0.8` 分支，使用 Node.js 24 和 pnpm：
+在 `release/beta-0.9` 分支使用 Node.js 24 和 pnpm。
 
 ```sh
 pnpm install --frozen-lockfile --ignore-scripts
