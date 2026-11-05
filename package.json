@@ -20,7 +20,7 @@
     "pack": "node scripts/build.mjs && node scripts/pack.mjs",
     "exe": "node scripts/build.mjs && electron-builder --config electron-builder.yml --win nsis portable --x64 --publish never",
     "beta": "node scripts/build.mjs && electron-builder --config electron-builder.beta.yml --win portable --x64 --publish never",
-    "beta:mac": "node scripts/build.mjs && electron-builder --config electron-builder.macos.yml --mac --publish never"
+    "beta:mac": "node scripts/build.mjs && node scripts/prepare-macos-runtime.cjs && electron-builder --config electron-builder.macos.yml --mac --publish never"
   },
   "dependencies": {
     "three": "0.186.1"

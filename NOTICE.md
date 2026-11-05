@@ -1,10 +1,12 @@
 # 来源与第三方说明
 
-湾湾是个人制作的非官方 Windows 桌宠，与十五运会组委会及吉祥物权利人没有官方合作关系。
+湾湾是个人制作的非官方桌宠，与十五运会组委会及吉祥物权利人没有官方合作关系。
 
 “喜洋洋 / 乐融融”及相关标识的权利归相应权利人。模型来自中山文明网公开源文件资料包，原始网格、UV 和嵌入贴图保持不变，动作由程序另行实现。来源、归档路径与校验值见 `assets/models/SOURCE.md` 和 `research/model-provenance.json`。公开下载不代表商业使用授权，使用范围以权利人发布的说明为准。项目未为这些素材授予新的许可。
 
 运行时包含 Electron、Chromium、Node.js 和 Three.js。Electron 许可见安装目录中的 `ELECTRON-LICENSE.txt`，Chromium 及组件说明见 `LICENSES.chromium.html`；Three.js 采用 MIT 许可，其版权为 © 2010–2026 three.js authors。
+
+macOS 包另含从固定版本源码编译的 Khronos Vulkan-Loader（Apache 2.0，内含 MIT 许可的 cJSON）。来源、版本和完整许可位于 `runtime-notices/`；源码归档地址与 SHA-256 见 `assets/runtime/vulkan-source.json`。该库在构建时补入 Electron 框架并随应用签名，不修改上游源代码。
 
 Three.js MIT 许可：
 

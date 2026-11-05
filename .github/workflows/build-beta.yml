@@ -81,6 +81,9 @@ jobs:
         run: node node_modules/electron/install.js
       - run: pnpm test
       - run: pnpm run build
+      - name: Prepare the native macOS graphics runtime
+        if: runner.os == 'macOS'
+        run: node scripts/prepare-macos-runtime.cjs
       - name: Package for the native architecture
         run: ${{ matrix.command }}
       - name: Verify the packaged application and reminders

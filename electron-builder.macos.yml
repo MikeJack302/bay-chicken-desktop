@@ -1,4 +1,5 @@
 extends: ./electron-builder.beta.yml
+afterPack: scripts/mac-after-pack.cjs
 directories:
   output: release/macos
 extraFiles: null
@@ -11,6 +12,8 @@ extraResources:
     to: MODEL-SOURCE.md
   - from: node_modules/electron/LICENSE
     to: ELECTRON-LICENSE.txt
+  - from: assets/runtime
+    to: runtime-notices
 mac:
   target:
     - dmg

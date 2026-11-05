@@ -29,8 +29,11 @@ pnpm install --frozen-lockfile --ignore-scripts
 node node_modules/electron/install.js
 pnpm test
 pnpm run build
+node scripts/prepare-macos-runtime.cjs
 pnpm exec electron-builder --config electron-builder.macos.yml --mac --arm64 --publish never
 node scripts/verify-release-bundle.cjs
 ```
 
 Intel Mac 把 `--arm64` 换为 `--x64`。产物位于 `release/macos/`。仓库的构建工作流在相应原生 Mac 环境中执行打包、签名完整性检查、程序启动、模型交互和真实计时提醒验证。
+
+本机构建需要 Xcode Command Line Tools 和 CMake。准备脚本会下载并校验固定版本的 Khronos Vulkan-Loader / Vulkan-Headers 源码，编译 macOS 13+ 对应架构的加载库，再于应用签名前放入包中。Intel 虚拟测试机使用隔离的软件 WebGL 模式；正常启动仍采用默认硬件渲染。

@@ -1,0 +1,12 @@
+{
+  "version": "1.4.363",
+  "tag": "vulkan-sdk-1.4.363.0",
+  "loader": {
+    "url": "https://codeload.github.com/KhronosGroup/Vulkan-Loader/tar.gz/fa218055ff4948b159f31d43f800c808a13d51df",
+    "sha256": "ae107edcf183b6fc9d6dbd4f8b78bd3e1c08dbc6168b86e55244e614acdfeb27"
+  },
+  "headers": {
+    "url": "https://codeload.github.com/KhronosGroup/Vulkan-Headers/tar.gz/6802bb4733b63ed5efd3adb308a6c885ef180ea1",
+    "sha256": "9044fbb356160e43201dc2094acb44c8a906722a63a35f48fc0f051579db9bb6"
+  }
+}

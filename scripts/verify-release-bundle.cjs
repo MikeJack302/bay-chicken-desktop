@@ -5,13 +5,13 @@ const{_electron}=require('playwright'),fs=require('node:fs/promises'),path=requi
   const base=path.resolve('release/macos',process.arch==='arm64'?'mac-arm64':'mac'),entries=await fs.readdir(base);appBundle=path.join(base,entries.find(n=>n.endsWith('.app'))||'missing.app');
   const plist=path.join(appBundle,'Contents/Info.plist'),value=key=>execFileSync('/usr/bin/plutil',['-extract',key,'raw','-o','-',plist],{encoding:'utf8'}).trim();
   assert.equal(value('CFBundleShortVersionString'),version);assert.equal(value('CFBundleIdentifier'),'cn.baychicken.desktop.beta');assert.equal(value('LSMinimumSystemVersion'),'13.0');executable=path.join(appBundle,'Contents/MacOS',value('CFBundleExecutable'));
-  const arch=execFileSync('/usr/bin/lipo',['-archs',executable],{encoding:'utf8'}).trim();assert.equal(arch,process.arch==='arm64'?'arm64':'x86_64');execFileSync('/usr/bin/codesign',['--verify','--deep','--strict',appBundle],{stdio:'inherit'});
+  const arch=execFileSync('/usr/bin/lipo',['-archs',executable],{encoding:'utf8'}).trim();assert.equal(arch,process.arch==='arm64'?'arm64':'x86_64');const vulkan=path.join(appBundle,'Contents/Frameworks/Electron Framework.framework/Libraries/libvulkan.dylib');assert.equal(execFileSync('/usr/bin/lipo',['-archs',vulkan],{encoding:'utf8'}).trim(),arch);assert.match(execFileSync('/usr/bin/otool',['-l',vulkan],{encoding:'utf8'}),/minos\s+13\.0\b/);execFileSync('/usr/bin/codesign',['--verify','--deep','--strict',appBundle],{stdio:'inherit'});
   for(const file of await fs.readdir('release/macos')){if(file.endsWith('.dmg'))execFileSync('/usr/bin/hdiutil',['verify',path.resolve('release/macos',file)],{stdio:'inherit'});if(file.endsWith('.zip'))execFileSync('/usr/bin/unzip',['-tq',path.resolve('release/macos',file)],{stdio:'inherit'});}
  }else executable=path.resolve('release/beta/win-unpacked/BayChickenBeta.exe');
  // Intel hosted macOS runners have no hardware WebGL device. This applies only
  // to the isolated smoke launch, never to normal application startup.
  const ciSoftwareGPU=Boolean(process.env.CI)&&process.platform==='darwin'&&process.arch==='x64';
- const args=['--smoke',...(ciSoftwareGPU?['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']:[])];
+ const args=['--smoke',...(ciSoftwareGPU?['--use-gl=angle','--use-angle=swiftshader-webgl','--enable-unsafe-swiftshader']:[])];
  const app=await _electron.launch({executablePath:executable,args,env,timeout:60000}),errors=[];
  try{
   const p=app.windows().find(p=>p.url().endsWith('pet.html'))||await app.waitForEvent('window',{predicate:p=>p.url().endsWith('pet.html')});p.on('pageerror',e=>errors.push(e.message));p.on('console',m=>{if(m.type()==='error')errors.push(m.text().slice(0,250));});p.setDefaultTimeout(90000);console.log(JSON.stringify({rendering:ciSoftwareGPU?'CI software WebGL':'native default WebGL',gpu:await app.evaluate(({app})=>app.getGPUFeatureStatus())}));await p.waitForFunction(()=>window.petDiagnostics?.ready,null,{timeout:90000});
