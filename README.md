@@ -8,7 +8,7 @@
 
 - **v0.7.0 稳定版**：改名、网球、屏幕趴边及日常玩具。
 - **v0.8.0-beta.1**：新增立体腿脚、举杠铃、连跳、动作表情和本地轻提醒。
-- **v0.8.0-beta.2**：macOS Apple Silicon / Intel 内测版本，尚未公开发布。
+- **v0.9.0 Beta** 为 macOS 首个公开 Beta，提供 Apple 芯片和 Intel 安装包。
 
 从 v0.6.0 起，各版本独立保留安装包，可以按版本下载和回退。旧版本不会被新版本覆盖。
 
@@ -25,6 +25,6 @@ Windows 使用托盘，macOS 使用菜单栏图标显示、隐藏或退出。稳
 
 ## 源码与构建
 
-`main` 保留稳定版应用代码；Beta 源码在 [`release/beta-0.8`](https://github.com/MikeJack302/bay-chicken-desktop/tree/release/beta-0.8) 分支。构建 Beta 请先切换到该分支，安装依赖后运行 `pnpm test` 和 `pnpm beta`；macOS 构建见对应说明。
+`main` 保留稳定版应用代码。Windows Beta 源码在 [`release/beta-0.8`](https://github.com/MikeJack302/bay-chicken-desktop/tree/release/beta-0.8)，Mac Beta 源码在 [`release/beta-0.9`](https://github.com/MikeJack302/bay-chicken-desktop/tree/release/beta-0.9)。Mac 构建步骤见 [macOS 说明](docs/MACOS.md)。
 
 [版本记录](CHANGELOG.md) · [模型来源](assets/models/SOURCE.md) · [第三方说明](NOTICE.md)

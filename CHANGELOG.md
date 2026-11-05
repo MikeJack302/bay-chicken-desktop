@@ -1,5 +1,11 @@
 # 版本记录
 
+## v0.9.0-beta · 2026-11-05 · macOS
+
+- 首次公开 Mac Beta，分别提供 Apple 芯片与 Intel 的 DMG 和 ZIP。
+- 保留白粉三维模型、趴边、改名、动作、道具和本地轻提醒。
+- 支持菜单栏操作、Option + 左键拖动旋转，并为 macOS 13+ 打包对应架构的图形运行库。
+
 ## v0.8.0-beta.2 · 2026-11-05 · Beta
 
 - 新增 macOS Apple Silicon / Intel 原生构建、DMG 与 ZIP 安装文件。

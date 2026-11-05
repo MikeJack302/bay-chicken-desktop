@@ -1,13 +1,13 @@
 # 湾湾大湾鸡 Beta 使用说明
 
-开发测试版本：`0.8.0-beta.2`（2026-11-05），包括 macOS 13+ 适配，尚未公开发布。现有 Windows 公开 Beta 仍为 `0.8.0-beta.1`。非官方个人作品。
+Mac 公开测试版为 `0.9.0-beta`，支持 macOS 13+。Windows 公开测试版为 `0.8.0-beta.1`。非官方个人作品。
 
 ## 下载与启动
 
 [选择所有历史版本](DOWNLOADS.md) · [macOS 安装、菜单栏与触控板操作](MACOS.md)
 
 
-Windows 用户仍可在 [Beta 发布页](https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v0.8.0-beta.1) 下载 `BayChicken-Beta-0.8.0-beta.1-x64.exe`，双击运行。Mac 内测用户按 [macOS 说明](MACOS.md) 选择 DMG 或 ZIP。模型已包含在安装包中，不需要 Node.js 或 API Key 即可玩动作和使用提醒。Windows 便携 EXE 首次启动有解包过程。
+Windows 用户可在 [Beta 发布页](https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v0.8.0-beta.1) 下载 `BayChicken-Beta-0.8.0-beta.1-x64.exe`，双击运行。Mac 用户按 [macOS 说明](MACOS.md) 选择 DMG 或 ZIP。模型已包含在安装包中，不需要 Node.js 或 API Key 即可玩动作和使用提醒。Windows 便携 EXE 首次启动有解包过程。
 
 这是预发布 Beta；[v0.7.0 稳定版](https://github.com/MikeJack302/bay-chicken-desktop/releases/tag/v0.7.0) 继续提供。Beta 使用 `%APPDATA%\bay-chicken-beta`，不覆盖稳定版和之前的试验版。首次启动只读取稳定版的名字、颜色、大小，不复制聊天记录或密钥。便携 EXE 的设置仍保存在本机用户目录。
 

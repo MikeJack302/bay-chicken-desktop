@@ -10,6 +10,14 @@ on:
         description: Verify installers from a successful run and upload only to the existing unpublished draft
         type: string
         default: ''
+      draft_release_id:
+        description: Numeric ID of the existing draft for this version
+        type: string
+        default: ''
+      macos_only:
+        description: Build or stage only the Mac packages
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -24,17 +32,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-15
-            artifact: mac-arm64
-            output: release/macos
-          - os: macos-15-intel
-            artifact: mac-x64
-            output: release/macos
-          - os: windows-2025
-            artifact: windows-x64
-            output: release/beta
-    runs-on: ${{ matrix.os }}
+        target: ${{ fromJSON(inputs.macos_only && '["mac-arm64","mac-x64"]' || '["windows-x64","mac-arm64","mac-x64"]') }}
+    runs-on: ${{ fromJSON('{"windows-x64":"windows-2025","mac-arm64":"macos-15","mac-x64":"macos-15-intel"}')[matrix.target] }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
@@ -51,8 +50,8 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - uses: actions/download-artifact@v8.0.2
         with:
-          name: beta-${{ matrix.artifact }}
-          path: ${{ matrix.output }}
+          name: beta-${{ matrix.target }}
+          path: ${{ matrix.target == 'windows-x64' && 'release/beta' || 'release/macos' }}
           run-id: ${{ inputs.draft_source_run }}
           github-token: ${{ github.token }}
       - name: Mount and launch the real Mac installer
@@ -63,6 +62,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           BAY_SOURCE_RUN: ${{ inputs.draft_source_run }}
+          BAY_DRAFT_RELEASE_ID: ${{ inputs.draft_release_id }}
   graphics:
     if: ${{ inputs.graphics_diagnostics }}
     runs-on: macos-15-intel
@@ -90,30 +90,14 @@ jobs:
           retention-days: 7
   package:
     if: ${{ !inputs.graphics_diagnostics && inputs.draft_source_run == '' }}
-    name: ${{ matrix.name }}
+    name: Package ${{ matrix.target }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: Windows x64
-            os: windows-2025
-            arch: x64
-            command: pnpm exec electron-builder --config electron-builder.beta.yml --win portable --x64 --publish never
-            output: release/beta
-            artifact: windows-x64
-          - name: macOS Apple Silicon
-            os: macos-15
-            arch: arm64
-            command: pnpm exec electron-builder --config electron-builder.macos.yml --mac --arm64 --publish never
-            output: release/macos
-            artifact: mac-arm64
-          - name: macOS Intel
-            os: macos-15-intel
-            arch: x64
-            command: pnpm exec electron-builder --config electron-builder.macos.yml --mac --x64 --publish never
-            output: release/macos
-            artifact: mac-x64
-    runs-on: ${{ matrix.os }}
+        target: ${{ fromJSON(inputs.macos_only && '["mac-arm64","mac-x64"]' || '["windows-x64","mac-arm64","mac-x64"]') }}
+    runs-on: ${{ fromJSON('{"windows-x64":"windows-2025","mac-arm64":"macos-15","mac-x64":"macos-15-intel"}')[matrix.target] }}
+    env:
+      PACKAGE_OUTPUT: ${{ matrix.target == 'windows-x64' && 'release/beta' || 'release/macos' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
@@ -135,20 +119,24 @@ jobs:
       - name: Prepare the native macOS graphics runtime
         if: runner.os == 'macOS'
         run: node scripts/prepare-macos-runtime.cjs
-      - name: Package for the native architecture
-        run: ${{ matrix.command }}
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        run: pnpm exec electron-builder --config electron-builder.beta.yml --win portable --x64 --publish never
+      - name: Package macOS for the native architecture
+        if: runner.os == 'macOS'
+        run: pnpm exec electron-builder --config electron-builder.macos.yml --mac ${{ matrix.target == 'mac-arm64' && '--arm64' || '--x64' }} --publish never
       - name: Verify the packaged application and reminders
         run: node scripts/verify-release-bundle.cjs
       - name: Generate checksums
         run: node scripts/distribution-checksums.cjs
       - uses: actions/upload-artifact@v6
         with:
-          name: beta-${{ matrix.artifact }}
+          name: beta-${{ matrix.target }}
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
           path: |
-            ${{ matrix.output }}/*.exe
-            ${{ matrix.output }}/*.dmg
-            ${{ matrix.output }}/*.zip
-            ${{ matrix.output }}/SHA256SUMS-*.txt
+            ${{ env.PACKAGE_OUTPUT }}/*.exe
+            ${{ env.PACKAGE_OUTPUT }}/*.dmg
+            ${{ env.PACKAGE_OUTPUT }}/*.zip
+            ${{ env.PACKAGE_OUTPUT }}/SHA256SUMS-*.txt
